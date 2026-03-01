@@ -731,18 +731,31 @@ export default function App() {
       supabase.from("profiles").select("*"),
       supabase.from("follows").select("*"),
     ]).then(([storesRes, reviewsRes, profilesRes, followsRes]) => {
-      if (storesRes.data) setStores(storesRes.data.map(s => ({
-        id: s.id, name: s.name, category: s.category, area: s.area,
-        priceRange: s.price_range, description: s.description, image: s.image,
-      })));
-      if (reviewsRes.data) setReviews(reviewsRes.data.map(r => ({
-        id: r.id, storeId: r.store_id, userId: r.user_id, userName: r.user_name,
-        userType: r.user_type, preExpect: r.pre_expect, result: r.result,
-        comment: r.comment, date: r.date,
-      })));
-      if (profilesRes.data) setUsers(profilesRes.data.map(p => ({
+      // 店舗: Supabaseにデータがあればそちら、なければサンプルデータ
+      if (storesRes.data && storesRes.data.length > 0) {
+        setStores(storesRes.data.map(s => ({
+          id: s.id, name: s.name, category: s.category, area: s.area,
+          priceRange: s.price_range, description: s.description, image: s.image,
+        })));
+      } else {
+        setStores(INITIAL_STORES);
+      }
+      // レビュー: Supabaseにデータがあればそちら、なければサンプルデータ
+      if (reviewsRes.data && reviewsRes.data.length > 0) {
+        setReviews(reviewsRes.data.map(r => ({
+          id: r.id, storeId: r.store_id, userId: r.user_id, userName: r.user_name,
+          userType: r.user_type, preExpect: r.pre_expect, result: r.result,
+          comment: r.comment, date: r.date,
+        })));
+      } else {
+        setReviews([...INITIAL_REVIEWS, ...SAMPLE_REVIEWS]);
+      }
+      // ユーザー: Supabaseのプロフィール + サンプルユーザーをマージ
+      const dbUsers = (profilesRes.data || []).map(p => ({
         ...p, userType: p.user_type, isAdmin: p.is_admin,
-      })));
+      }));
+      setUsers([...dbUsers, ...SAMPLE_USERS]);
+      // フォロー
       if (followsRes.data) {
         const followMap = {};
         followsRes.data.forEach(f => {
