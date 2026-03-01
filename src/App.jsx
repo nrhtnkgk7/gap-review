@@ -1,4 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = "https://hhnhzvxfqwhfhcewbpye.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhobmh6dnhmcXdoZmhjZXdicHllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjc5NDQsImV4cCI6MjA4Nzk0Mzk0NH0.P4beK1FAe5pQhqX3oKQ-da7nkV3cMNd-jwcFnCLtQlM";
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ─── Initial Mock Data ───────────────────────────────────────────────────────
 const INITIAL_STORES = [
@@ -11,15 +16,270 @@ const INITIAL_STORES = [
 ];
 
 const INITIAL_REVIEWS = [
-  { id: 1, storeId: 1, userId: "u2", userName: "Kaito M.", preExpect: "high", result: "Expected", comment: "期待通りの江戸前。職人の仕事が丁寧で、光り物が特に素晴らしかった。", date: "2025-02-10", userType: "BB" },
+  { id: 1, storeId: 1, userId: "u2", userName: "Kaito M.", preExpect: "high", result: "Below", comment: "評判ほどではなかった。自分の好みとは合わなかった。", date: "2025-02-10", userType: "BI" },
   { id: 2, storeId: 1, userId: "u3", userName: "Risa T.", preExpect: "high", result: "Good", comment: "鮪の赤身の熟成具合が完璧。静かな空間も気に入った。", date: "2025-02-14", userType: "DI" },
-  { id: 3, storeId: 2, userId: "u2", userName: "Kaito M.", preExpect: "normal", result: "Good", comment: "アミューズから始まる構成が見事。素材の選び方に哲学を感じた。", date: "2025-01-28", userType: "BB" },
+  { id: 3, storeId: 2, userId: "u2", userName: "Kaito M.", preExpect: "high", result: "Below", comment: "評判ほどではなかった。料理の構成より素材そのものを重視する自分には合わなかった。", date: "2025-01-28", userType: "BI" },
   { id: 4, storeId: 3, userId: "u4", userName: "Sora Y.", preExpect: "low", result: "Good", comment: "期待以上にサービスが洗練されていた。肉質も申し分なし。", date: "2025-02-05", userType: "BC" },
   { id: 5, storeId: 4, userId: "u3", userName: "Risa T.", preExpect: "high", result: "Below", comment: "季節感は良かったが、油の温度管理に少し粗さを感じた。", date: "2025-01-20", userType: "DI" },
   { id: 6, storeId: 6, userId: "u4", userName: "Sora Y.", preExpect: "normal", result: "Good", comment: "このレベルのラーメンが千円台は驚き。スープが透き通っていて美しい。", date: "2025-02-18", userType: "DC" },
+  { id: 7, storeId: 1, userId: "u5", userName: "Hana K.", preExpect: "normal", result: "Good", comment: "シャリの温度が完璧。ひとつひとつのネタへの向き合い方が誠実。", date: "2025-02-20", userType: "DC" },
+  { id: 8, storeId: 2, userId: "u5", userName: "Hana K.", preExpect: "high", result: "Good", comment: "コースの流れが計算されていて、食後感がとても清々しかった。", date: "2025-02-22", userType: "DC" },
+  { id: 9, storeId: 5, userId: "u3", userName: "Risa T.", preExpect: "normal", result: "Good", comment: "カクテルの精度が高い。バーテンダーの引き出しが広く会話も楽しめた。", date: "2025-02-15", userType: "DI" },
+  { id: 10, storeId: 6, userId: "u2", userName: "Kaito M.", preExpect: "low", result: "Good", comment: "素材の良さをそのまま感じられるスープ。余計なものが何もない。", date: "2025-02-19", userType: "BI" },
 ];
 
-// ─── User Types ───────────────────────────────────────────────────────────────
+const SAMPLE_USERS = [
+  { id: "s1", name: "Aoi U00.", email: "s1@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s2", name: "Haruto U01.", email: "s2@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s3", name: "Yuna U02.", email: "s3@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s4", name: "Sota U03.", email: "s4@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s5", name: "Mio U04.", email: "s5@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s6", name: "Ren U05.", email: "s6@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s7", name: "Saki U06.", email: "s7@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s8", name: "Kento U07.", email: "s8@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s9", name: "Nana U08.", email: "s9@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s10", name: "Yuki U09.", email: "s10@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s11", name: "Riku U10.", email: "s11@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s12", name: "Hina U11.", email: "s12@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s13", name: "Daiki U12.", email: "s13@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s14", name: "Emi U13.", email: "s14@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s15", name: "Shota U14.", email: "s15@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s16", name: "Kana U15.", email: "s16@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s17", name: "Takuma U16.", email: "s17@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s18", name: "Yui U17.", email: "s18@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s19", name: "Naoto U18.", email: "s19@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s20", name: "Rika U19.", email: "s20@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s21", name: "Jun U20.", email: "s21@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s22", name: "Mei U21.", email: "s22@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s23", name: "Koki U22.", email: "s23@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s24", name: "Sara U23.", email: "s24@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s25", name: "Ryota U24.", email: "s25@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s26", name: "Ayaka U25.", email: "s26@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s27", name: "Kenji U26.", email: "s27@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s28", name: "Noa U27.", email: "s28@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s29", name: "Hiroshi U28.", email: "s29@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s30", name: "Miyu U29.", email: "s30@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s31", name: "Tatsuya U30.", email: "s31@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s32", name: "Akari U31.", email: "s32@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s33", name: "Shohei U32.", email: "s33@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s34", name: "Misaki U33.", email: "s34@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s35", name: "Yuya U34.", email: "s35@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s36", name: "Koharu U35.", email: "s36@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s37", name: "Taro U36.", email: "s37@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s38", name: "Asuka U37.", email: "s38@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s39", name: "Sho U38.", email: "s39@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s40", name: "Yuko U39.", email: "s40@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s41", name: "Makoto U40.", email: "s41@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s42", name: "Hana U41.", email: "s42@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s43", name: "Kazuki U42.", email: "s43@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s44", name: "Rin U43.", email: "s44@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s45", name: "Masaki U44.", email: "s45@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s46", name: "Chika U45.", email: "s46@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s47", name: "Ryo U46.", email: "s47@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s48", name: "Sena U47.", email: "s48@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s49", name: "Fuyu U48.", email: "s49@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s50", name: "Towa U49.", email: "s50@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s51", name: "Kaname U50.", email: "s51@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s52", name: "Itsuki U51.", email: "s52@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s53", name: "Shiori U52.", email: "s53@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s54", name: "Reon U53.", email: "s54@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s55", name: "Amane U54.", email: "s55@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s56", name: "Tsukasa U55.", email: "s56@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s57", name: "Kotone U56.", email: "s57@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s58", name: "Haruki U57.", email: "s58@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s59", name: "Suzu U58.", email: "s59@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s60", name: "Minato U59.", email: "s60@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s61", name: "Akito U60.", email: "s61@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s62", name: "Izumi U61.", email: "s62@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s63", name: "Soshi U62.", email: "s63@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s64", name: "Nozomi U63.", email: "s64@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s65", name: "Kanata U64.", email: "s65@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s66", name: "Yuito U65.", email: "s66@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s67", name: "Hinata U66.", email: "s67@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s68", name: "Souma U67.", email: "s68@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s69", name: "Kokona U68.", email: "s69@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s70", name: "Tsumugi U69.", email: "s70@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s71", name: "Hayato U70.", email: "s71@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s72", name: "Ichika U71.", email: "s72@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s73", name: "Ryusei U72.", email: "s73@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s74", name: "Sakura U73.", email: "s74@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s75", name: "Kain U74.", email: "s75@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s76", name: "Nanami U75.", email: "s76@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s77", name: "Shun U76.", email: "s77@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s78", name: "Kotaro U77.", email: "s78@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s79", name: "Arisa U78.", email: "s79@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s80", name: "Taiga U79.", email: "s80@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s81", name: "Miharu U80.", email: "s81@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s82", name: "Sosuke U81.", email: "s82@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s83", name: "Kokomi U82.", email: "s83@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s84", name: "Kira U83.", email: "s84@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s85", name: "Takeru U84.", email: "s85@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s86", name: "Seira U85.", email: "s86@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s87", name: "Yusei U86.", email: "s87@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s88", name: "Tomoka U87.", email: "s88@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s89", name: "Ibuki U88.", email: "s89@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s90", name: "Haruma U89.", email: "s90@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s91", name: "Mizuki U90.", email: "s91@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s92", name: "Rui U91.", email: "s92@example.com", password: "pass", isAdmin: false, userType: "DC" },
+  { id: "s93", name: "Akane U92.", email: "s93@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s94", name: "Souta U93.", email: "s94@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s95", name: "Kohana U94.", email: "s95@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s96", name: "Itsumi U95.", email: "s96@example.com", password: "pass", isAdmin: false, userType: "BI" },
+  { id: "s97", name: "Hayate U96.", email: "s97@example.com", password: "pass", isAdmin: false, userType: "DI" },
+  { id: "s98", name: "Shouta U97.", email: "s98@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s99", name: "Fumika U98.", email: "s99@example.com", password: "pass", isAdmin: false, userType: "BC" },
+  { id: "s100", name: "Tsuna U99.", email: "s100@example.com", password: "pass", isAdmin: false, userType: "BI" }
+];
+
+const SAMPLE_REVIEWS = [
+  { id: 11, storeId: 1, userId: "s13", userName: "Daiki U12.", preExpect: "high", result: "Below", comment: "コスパを考えると、もう少し頑張ってほしかった。", date: "2025-01-07", userType: "BI" },
+  { id: 12, storeId: 1, userId: "s6", userName: "Ren U05.", preExpect: "high", result: "Below", comment: "評判ほどではなかった。自分には合わなかった。", date: "2025-05-08", userType: "BI" },
+  { id: 13, storeId: 1, userId: "s68", userName: "Souma U67.", preExpect: "high", result: "Below", comment: "友人に勧められて来たが、自分には刺さらなかった。", date: "2025-01-27", userType: "BI" },
+  { id: 14, storeId: 1, userId: "s53", userName: "Shiori U52.", preExpect: "high", result: "Below", comment: "口に合わなかった。好みの問題かもしれない。", date: "2025-02-26", userType: "BI" },
+  { id: 15, storeId: 1, userId: "s61", userName: "Akito U60.", preExpect: "high", result: "Below", comment: "コスパを考えると、もう少し頑張ってほしかった。", date: "2025-02-11", userType: "BI" },
+  { id: 16, storeId: 1, userId: "s85", userName: "Takeru U84.", preExpect: "high", result: "Below", comment: "SNSの印象と実際のギャップが大きかった。", date: "2025-05-17", userType: "BI" },
+  { id: 17, storeId: 1, userId: "s96", userName: "Itsumi U95.", preExpect: "high", result: "Expected", comment: "期待通りの安定感。", date: "2025-05-18", userType: "BI" },
+  { id: 18, storeId: 1, userId: "s70", userName: "Tsumugi U69.", preExpect: "high", result: "Expected", comment: "期待通りの安定感。", date: "2025-02-21", userType: "BC" },
+  { id: 19, storeId: 1, userId: "s19", userName: "Naoto U18.", preExpect: "normal", result: "Below", comment: "友人に勧められて来たが、自分には刺さらなかった。", date: "2025-01-19", userType: "BC" },
+  { id: 20, storeId: 1, userId: "s57", userName: "Kotone U56.", preExpect: "normal", result: "Below", comment: "コスパを考えると、もう少し頑張ってほしかった。", date: "2025-01-03", userType: "BC" },
+  { id: 21, storeId: 1, userId: "s99", userName: "Fumika U98.", preExpect: "normal", result: "Below", comment: "評判ほどではなかった。自分には合わなかった。", date: "2025-05-19", userType: "BC" },
+  { id: 22, storeId: 1, userId: "s51", userName: "Kaname U50.", preExpect: "normal", result: "Expected", comment: "水準は高いが驚きはなかった。", date: "2025-04-25", userType: "BC" },
+  { id: 23, storeId: 1, userId: "s41", userName: "Makoto U40.", preExpect: "normal", result: "Expected", comment: "コンセプトは好きだが印象が薄かった。", date: "2025-03-17", userType: "BC" },
+  { id: 24, storeId: 1, userId: "s65", userName: "Kanata U64.", preExpect: "normal", result: "Expected", comment: "水準は高いが驚きはなかった。", date: "2025-05-23", userType: "DI" },
+  { id: 25, storeId: 1, userId: "s71", userName: "Hayato U70.", preExpect: "normal", result: "Expected", comment: "丁寧な仕事だが、記憶に残るかは微妙。", date: "2025-03-16", userType: "DI" },
+  { id: 26, storeId: 1, userId: "s91", userName: "Mizuki U90.", preExpect: "high", result: "Expected", comment: "期待通りの安定感。", date: "2025-06-28", userType: "DI" },
+  { id: 27, storeId: 1, userId: "s56", userName: "Tsukasa U55.", preExpect: "normal", result: "Good", comment: "静かな空間で集中して食べられた。", date: "2025-05-25", userType: "DI" },
+  { id: 28, storeId: 1, userId: "s26", userName: "Ayaka U25.", preExpect: "normal", result: "Good", comment: "連れていった友人にも大好評だった。", date: "2025-06-04", userType: "DI" },
+  { id: 29, storeId: 1, userId: "s59", userName: "Suzu U58.", preExpect: "high", result: "Expected", comment: "全体的に及第点。可もなく不可もなく。", date: "2025-01-27", userType: "DI" },
+  { id: 30, storeId: 1, userId: "s15", userName: "Shota U14.", preExpect: "high", result: "Good", comment: "静かな空間で集中して食べられた。", date: "2025-01-06", userType: "DC" },
+  { id: 31, storeId: 1, userId: "s35", userName: "Yuya U34.", preExpect: "high", result: "Good", comment: "想像以上にレベルが高く、感動した。", date: "2025-03-14", userType: "DC" },
+  { id: 32, storeId: 1, userId: "s83", userName: "Kokomi U82.", preExpect: "normal", result: "Good", comment: "期待を大きく超えてきた。また来たい。", date: "2025-05-21", userType: "DC" },
+  { id: 33, storeId: 1, userId: "s8", userName: "Kento U07.", preExpect: "high", result: "Good", comment: "素晴らしい体験。スタッフの心配りも完璧。", date: "2025-03-21", userType: "DC" },
+  { id: 34, storeId: 1, userId: "s17", userName: "Takuma U16.", preExpect: "normal", result: "Good", comment: "期待を裏切られた——良い方向に。", date: "2025-06-26", userType: "DC" },
+  { id: 35, storeId: 2, userId: "s96", userName: "Itsumi U95.", preExpect: "high", result: "Below", comment: "サービスに少し難あり。料理も期待以下。", date: "2025-01-02", userType: "BI" },
+  { id: 36, storeId: 2, userId: "s6", userName: "Ren U05.", preExpect: "high", result: "Below", comment: "サービスに少し難あり。料理も期待以下。", date: "2025-02-05", userType: "BI" },
+  { id: 37, storeId: 2, userId: "s9", userName: "Nana U08.", preExpect: "normal", result: "Below", comment: "口に合わなかった。好みの問題かもしれない。", date: "2025-06-23", userType: "BI" },
+  { id: 38, storeId: 2, userId: "s66", userName: "Yuito U65.", preExpect: "high", result: "Below", comment: "評判ほどではなかった。自分には合わなかった。", date: "2025-01-12", userType: "BI" },
+  { id: 39, storeId: 2, userId: "s22", userName: "Mei U21.", preExpect: "high", result: "Below", comment: "雰囲気は良いが、肝心の料理が自分好みではなかった。", date: "2025-01-19", userType: "BI" },
+  { id: 40, storeId: 2, userId: "s68", userName: "Souma U67.", preExpect: "high", result: "Below", comment: "SNSの印象と実際のギャップが大きかった。", date: "2025-05-27", userType: "BI" },
+  { id: 41, storeId: 2, userId: "s60", userName: "Minato U59.", preExpect: "normal", result: "Below", comment: "ピークを過ぎた感じがした。", date: "2025-05-09", userType: "BI" },
+  { id: 42, storeId: 2, userId: "s33", userName: "Shohei U32.", preExpect: "high", result: "Good", comment: "連れていった友人にも大好評だった。", date: "2025-01-25", userType: "BC" },
+  { id: 43, storeId: 2, userId: "s57", userName: "Kotone U56.", preExpect: "high", result: "Good", comment: "ひとつひとつの仕事が丁寧だった。", date: "2025-04-03", userType: "BC" },
+  { id: 44, storeId: 2, userId: "s64", userName: "Nozomi U63.", preExpect: "high", result: "Expected", comment: "サービスは良かったが料理は普通。", date: "2025-06-25", userType: "BC" },
+  { id: 45, storeId: 2, userId: "s51", userName: "Kaname U50.", preExpect: "high", result: "Good", comment: "ひとつひとつの仕事が丁寧だった。", date: "2025-03-02", userType: "BC" },
+  { id: 46, storeId: 2, userId: "s49", userName: "Fuyu U48.", preExpect: "high", result: "Good", comment: "想像以上にレベルが高く、感動した。", date: "2025-03-12", userType: "BC" },
+  { id: 47, storeId: 2, userId: "s62", userName: "Izumi U61.", preExpect: "high", result: "Expected", comment: "全体的に及第点。可もなく不可もなく。", date: "2025-02-17", userType: "DI" },
+  { id: 48, storeId: 2, userId: "s46", userName: "Chika U45.", preExpect: "high", result: "Expected", comment: "コンセプトは好きだが印象が薄かった。", date: "2025-04-27", userType: "DI" },
+  { id: 49, storeId: 2, userId: "s95", userName: "Kohana U94.", preExpect: "normal", result: "Expected", comment: "コンセプトは好きだが印象が薄かった。", date: "2025-01-27", userType: "DI" },
+  { id: 50, storeId: 2, userId: "s65", userName: "Kanata U64.", preExpect: "normal", result: "Expected", comment: "サービスは良かったが料理は普通。", date: "2025-05-10", userType: "DI" },
+  { id: 51, storeId: 2, userId: "s37", userName: "Taro U36.", preExpect: "high", result: "Expected", comment: "値段相応の体験だった。", date: "2025-04-15", userType: "DI" },
+  { id: 52, storeId: 2, userId: "s4", userName: "Sota U03.", preExpect: "normal", result: "Expected", comment: "コンセプトは好きだが印象が薄かった。", date: "2025-06-17", userType: "DI" },
+  { id: 53, storeId: 2, userId: "s89", userName: "Ibuki U88.", preExpect: "normal", result: "Below", comment: "口に合わなかった。好みの問題かもしれない。", date: "2025-03-17", userType: "DI" },
+  { id: 54, storeId: 2, userId: "s72", userName: "Ichika U71.", preExpect: "high", result: "Good", comment: "ひとつひとつの仕事が丁寧だった。", date: "2025-04-12", userType: "DC" },
+  { id: 55, storeId: 2, userId: "s45", userName: "Masaki U44.", preExpect: "high", result: "Expected", comment: "サービスは良かったが料理は普通。", date: "2025-04-08", userType: "DC" },
+  { id: 56, storeId: 2, userId: "s82", userName: "Sosuke U81.", preExpect: "high", result: "Good", comment: "期待を裏切られた——良い方向に。", date: "2025-02-09", userType: "DC" },
+  { id: 57, storeId: 2, userId: "s76", userName: "Nanami U75.", preExpect: "high", result: "Good", comment: "期待を裏切られた——良い方向に。", date: "2025-06-08", userType: "DC" },
+  { id: 58, storeId: 2, userId: "s5", userName: "Mio U04.", preExpect: "normal", result: "Expected", comment: "サービスは良かったが料理は普通。", date: "2025-01-24", userType: "DC" },
+  { id: 59, storeId: 2, userId: "s83", userName: "Kokomi U82.", preExpect: "high", result: "Expected", comment: "値段相応の体験だった。", date: "2025-04-01", userType: "DC" },
+  { id: 60, storeId: 3, userId: "s93", userName: "Akane U92.", preExpect: "normal", result: "Good", comment: "素材の質が抜群で、全皿に意志を感じた。", date: "2025-06-24", userType: "BI" },
+  { id: 61, storeId: 3, userId: "s6", userName: "Ren U05.", preExpect: "low", result: "Expected", comment: "期待通りの安定感。", date: "2025-01-28", userType: "BI" },
+  { id: 62, storeId: 3, userId: "s68", userName: "Souma U67.", preExpect: "normal", result: "Expected", comment: "悪くはないが、特別感はなかった。", date: "2025-01-24", userType: "BI" },
+  { id: 63, storeId: 3, userId: "s85", userName: "Takeru U84.", preExpect: "low", result: "Good", comment: "ひとつひとつの仕事が丁寧だった。", date: "2025-05-13", userType: "BI" },
+  { id: 64, storeId: 3, userId: "s21", userName: "Jun U20.", preExpect: "low", result: "Good", comment: "連れていった友人にも大好評だった。", date: "2025-05-26", userType: "BI" },
+  { id: 65, storeId: 3, userId: "s69", userName: "Kokona U68.", preExpect: "normal", result: "Good", comment: "静かな空間で集中して食べられた。", date: "2025-04-09", userType: "BI" },
+  { id: 66, storeId: 3, userId: "s34", userName: "Misaki U33.", preExpect: "high", result: "Good", comment: "ひとつひとつの仕事が丁寧だった。", date: "2025-03-22", userType: "BC" },
+  { id: 67, storeId: 3, userId: "s64", userName: "Nozomi U63.", preExpect: "normal", result: "Good", comment: "静かな空間で集中して食べられた。", date: "2025-02-21", userType: "BC" },
+  { id: 68, storeId: 3, userId: "s94", userName: "Souta U93.", preExpect: "low", result: "Expected", comment: "期待通りの安定感。", date: "2025-03-07", userType: "BC" },
+  { id: 69, storeId: 3, userId: "s14", userName: "Emi U13.", preExpect: "low", result: "Good", comment: "期待を裏切られた——良い方向に。", date: "2025-04-15", userType: "BC" },
+  { id: 70, storeId: 3, userId: "s98", userName: "Shouta U97.", preExpect: "low", result: "Good", comment: "素晴らしい体験。スタッフの心配りも完璧。", date: "2025-04-11", userType: "BC" },
+  { id: 71, storeId: 3, userId: "s32", userName: "Akari U31.", preExpect: "normal", result: "Good", comment: "期待を裏切られた——良い方向に。", date: "2025-03-04", userType: "BC" },
+  { id: 72, storeId: 3, userId: "s70", userName: "Tsumugi U69.", preExpect: "high", result: "Expected", comment: "全体的に及第点。可もなく不可もなく。", date: "2025-04-01", userType: "BC" },
+  { id: 73, storeId: 3, userId: "s54", userName: "Reon U53.", preExpect: "high", result: "Expected", comment: "丁寧な仕事だが、記憶に残るかは微妙。", date: "2025-06-14", userType: "DI" },
+  { id: 74, storeId: 3, userId: "s95", userName: "Kohana U94.", preExpect: "high", result: "Expected", comment: "水準は高いが驚きはなかった。", date: "2025-02-25", userType: "DI" },
+  { id: 75, storeId: 3, userId: "s52", userName: "Itsuki U51.", preExpect: "normal", result: "Expected", comment: "期待通りの安定感。", date: "2025-03-08", userType: "DI" },
+  { id: 76, storeId: 3, userId: "s37", userName: "Taro U36.", preExpect: "high", result: "Below", comment: "SNSの印象と実際のギャップが大きかった。", date: "2025-02-02", userType: "DI" },
+  { id: 77, storeId: 3, userId: "s1", userName: "Aoi U00.", preExpect: "high", result: "Below", comment: "友人に勧められて来たが、自分には刺さらなかった。", date: "2025-02-19", userType: "DI" },
+  { id: 78, storeId: 3, userId: "s2", userName: "Haruto U01.", preExpect: "high", result: "Expected", comment: "コンセプトは好きだが印象が薄かった。", date: "2025-02-11", userType: "DI" },
+  { id: 79, storeId: 3, userId: "s5", userName: "Mio U04.", preExpect: "normal", result: "Good", comment: "静かな空間で集中して食べられた。", date: "2025-01-24", userType: "DC" },
+  { id: 80, storeId: 3, userId: "s8", userName: "Kento U07.", preExpect: "normal", result: "Good", comment: "静かな空間で集中して食べられた。", date: "2025-01-25", userType: "DC" },
+  { id: 81, storeId: 3, userId: "s16", userName: "Kana U15.", preExpect: "normal", result: "Good", comment: "期待を大きく超えてきた。また来たい。", date: "2025-02-07", userType: "DC" },
+  { id: 82, storeId: 3, userId: "s35", userName: "Yuya U34.", preExpect: "normal", result: "Good", comment: "想像以上にレベルが高く、感動した。", date: "2025-01-27", userType: "DC" },
+  { id: 83, storeId: 3, userId: "s50", userName: "Towa U49.", preExpect: "high", result: "Below", comment: "口に合わなかった。好みの問題かもしれない。", date: "2025-02-02", userType: "DC" },
+  { id: 84, storeId: 4, userId: "s53", userName: "Shiori U52.", preExpect: "high", result: "Below", comment: "サービスに少し難あり。料理も期待以下。", date: "2025-03-09", userType: "BI" },
+  { id: 85, storeId: 4, userId: "s69", userName: "Kokona U68.", preExpect: "high", result: "Expected", comment: "悪くはないが、特別感はなかった。", date: "2025-06-03", userType: "BI" },
+  { id: 86, storeId: 4, userId: "s38", userName: "Asuka U37.", preExpect: "high", result: "Below", comment: "コスパを考えると、もう少し頑張ってほしかった。", date: "2025-01-09", userType: "BI" },
+  { id: 87, storeId: 4, userId: "s6", userName: "Ren U05.", preExpect: "high", result: "Expected", comment: "コンセプトは好きだが印象が薄かった。", date: "2025-06-25", userType: "BI" },
+  { id: 88, storeId: 4, userId: "s24", userName: "Sara U23.", preExpect: "high", result: "Below", comment: "サービスに少し難あり。料理も期待以下。", date: "2025-02-06", userType: "BI" },
+  { id: 89, storeId: 4, userId: "s44", userName: "Rin U43.", preExpect: "normal", result: "Expected", comment: "水準は高いが驚きはなかった。", date: "2025-04-03", userType: "BI" },
+  { id: 90, storeId: 4, userId: "s93", userName: "Akane U92.", preExpect: "high", result: "Expected", comment: "期待通りの安定感。", date: "2025-03-08", userType: "BI" },
+  { id: 91, storeId: 4, userId: "s39", userName: "Sho U38.", preExpect: "high", result: "Below", comment: "コスパを考えると、もう少し頑張ってほしかった。", date: "2025-03-23", userType: "BC" },
+  { id: 92, storeId: 4, userId: "s78", userName: "Kotaro U77.", preExpect: "high", result: "Expected", comment: "期待通りの安定感。", date: "2025-03-15", userType: "BC" },
+  { id: 93, storeId: 4, userId: "s49", userName: "Fuyu U48.", preExpect: "high", result: "Below", comment: "SNSの印象と実際のギャップが大きかった。", date: "2025-05-23", userType: "BC" },
+  { id: 94, storeId: 4, userId: "s19", userName: "Naoto U18.", preExpect: "high", result: "Below", comment: "評判ほどではなかった。自分には合わなかった。", date: "2025-04-03", userType: "BC" },
+  { id: 95, storeId: 4, userId: "s31", userName: "Tatsuya U30.", preExpect: "high", result: "Below", comment: "サービスに少し難あり。料理も期待以下。", date: "2025-04-19", userType: "BC" },
+  { id: 96, storeId: 4, userId: "s7", userName: "Saki U06.", preExpect: "high", result: "Expected", comment: "悪くはないが、特別感はなかった。", date: "2025-02-24", userType: "BC" },
+  { id: 97, storeId: 4, userId: "s98", userName: "Shouta U97.", preExpect: "high", result: "Below", comment: "SNSの印象と実際のギャップが大きかった。", date: "2025-04-17", userType: "BC" },
+  { id: 98, storeId: 4, userId: "s4", userName: "Sota U03.", preExpect: "normal", result: "Good", comment: "想像以上にレベルが高く、感動した。", date: "2025-03-22", userType: "DI" },
+  { id: 99, storeId: 4, userId: "s97", userName: "Hayate U96.", preExpect: "normal", result: "Expected", comment: "水準は高いが驚きはなかった。", date: "2025-05-25", userType: "DI" },
+  { id: 100, storeId: 4, userId: "s71", userName: "Hayato U70.", preExpect: "high", result: "Good", comment: "期待を大きく超えてきた。また来たい。", date: "2025-04-23", userType: "DI" },
+  { id: 101, storeId: 4, userId: "s10", userName: "Yuki U09.", preExpect: "normal", result: "Good", comment: "コスパを超えた体験。リピート確定。", date: "2025-02-10", userType: "DI" },
+  { id: 102, storeId: 4, userId: "s67", userName: "Hinata U66.", preExpect: "normal", result: "Good", comment: "期待を裏切られた——良い方向に。", date: "2025-01-05", userType: "DI" },
+  { id: 103, storeId: 4, userId: "s74", userName: "Sakura U73.", preExpect: "normal", result: "Expected", comment: "コンセプトは好きだが印象が薄かった。", date: "2025-04-20", userType: "DI" },
+  { id: 104, storeId: 4, userId: "s35", userName: "Yuya U34.", preExpect: "high", result: "Expected", comment: "水準は高いが驚きはなかった。", date: "2025-03-22", userType: "DC" },
+  { id: 105, storeId: 4, userId: "s83", userName: "Kokomi U82.", preExpect: "high", result: "Expected", comment: "期待通りの安定感。", date: "2025-04-28", userType: "DC" },
+  { id: 106, storeId: 4, userId: "s82", userName: "Sosuke U81.", preExpect: "normal", result: "Good", comment: "ひとつひとつの仕事が丁寧だった。", date: "2025-01-20", userType: "DC" },
+  { id: 107, storeId: 4, userId: "s8", userName: "Kento U07.", preExpect: "normal", result: "Expected", comment: "コンセプトは好きだが印象が薄かった。", date: "2025-03-26", userType: "DC" },
+  { id: 108, storeId: 4, userId: "s12", userName: "Hina U11.", preExpect: "normal", result: "Expected", comment: "悪くはないが、特別感はなかった。", date: "2025-03-23", userType: "DC" },
+  { id: 109, storeId: 4, userId: "s20", userName: "Rika U19.", preExpect: "normal", result: "Expected", comment: "水準は高いが驚きはなかった。", date: "2025-02-24", userType: "DC" },
+  { id: 110, storeId: 5, userId: "s6", userName: "Ren U05.", preExpect: "low", result: "Good", comment: "コスパを超えた体験。リピート確定。", date: "2025-03-05", userType: "BI" },
+  { id: 111, storeId: 5, userId: "s68", userName: "Souma U67.", preExpect: "low", result: "Expected", comment: "丁寧な仕事だが、記憶に残るかは微妙。", date: "2025-01-04", userType: "BI" },
+  { id: 112, storeId: 5, userId: "s69", userName: "Kokona U68.", preExpect: "low", result: "Good", comment: "期待を大きく超えてきた。また来たい。", date: "2025-04-27", userType: "BI" },
+  { id: 113, storeId: 5, userId: "s96", userName: "Itsumi U95.", preExpect: "normal", result: "Good", comment: "今まで行った中でも上位に入る体験。", date: "2025-03-22", userType: "BI" },
+  { id: 114, storeId: 5, userId: "s21", userName: "Jun U20.", preExpect: "low", result: "Good", comment: "期待を大きく超えてきた。また来たい。", date: "2025-05-25", userType: "BI" },
+  { id: 115, storeId: 5, userId: "s48", userName: "Sena U47.", preExpect: "low", result: "Good", comment: "静かな空間で集中して食べられた。", date: "2025-03-18", userType: "BI" },
+  { id: 116, storeId: 5, userId: "s60", userName: "Minato U59.", preExpect: "low", result: "Good", comment: "連れていった友人にも大好評だった。", date: "2025-04-11", userType: "BI" },
+  { id: 117, storeId: 5, userId: "s78", userName: "Kotaro U77.", preExpect: "low", result: "Good", comment: "今まで行った中でも上位に入る体験。", date: "2025-04-25", userType: "BC" },
+  { id: 118, storeId: 5, userId: "s58", userName: "Haruki U57.", preExpect: "normal", result: "Expected", comment: "悪くはないが、特別感はなかった。", date: "2025-06-14", userType: "BC" },
+  { id: 119, storeId: 5, userId: "s43", userName: "Kazuki U42.", preExpect: "low", result: "Good", comment: "素晴らしい体験。スタッフの心配りも完璧。", date: "2025-05-10", userType: "BC" },
+  { id: 120, storeId: 5, userId: "s49", userName: "Fuyu U48.", preExpect: "normal", result: "Good", comment: "ひとつひとつの仕事が丁寧だった。", date: "2025-04-04", userType: "BC" },
+  { id: 121, storeId: 5, userId: "s98", userName: "Shouta U97.", preExpect: "normal", result: "Good", comment: "期待を裏切られた——良い方向に。", date: "2025-06-01", userType: "BC" },
+  { id: 122, storeId: 5, userId: "s64", userName: "Nozomi U63.", preExpect: "low", result: "Good", comment: "想像以上にレベルが高く、感動した。", date: "2025-06-02", userType: "BC" },
+  { id: 123, storeId: 5, userId: "s54", userName: "Reon U53.", preExpect: "normal", result: "Good", comment: "連れていった友人にも大好評だった。", date: "2025-02-20", userType: "DI" },
+  { id: 124, storeId: 5, userId: "s75", userName: "Kain U74.", preExpect: "low", result: "Good", comment: "静かな空間で集中して食べられた。", date: "2025-06-12", userType: "DI" },
+  { id: 125, storeId: 5, userId: "s2", userName: "Haruto U01.", preExpect: "normal", result: "Good", comment: "素材の質が抜群で、全皿に意志を感じた。", date: "2025-06-12", userType: "DI" },
+  { id: 126, storeId: 5, userId: "s25", userName: "Ryota U24.", preExpect: "normal", result: "Good", comment: "想像以上にレベルが高く、感動した。", date: "2025-04-19", userType: "DI" },
+  { id: 127, storeId: 5, userId: "s59", userName: "Suzu U58.", preExpect: "normal", result: "Good", comment: "静かな空間で集中して食べられた。", date: "2025-01-05", userType: "DI" },
+  { id: 128, storeId: 5, userId: "s10", userName: "Yuki U09.", preExpect: "normal", result: "Expected", comment: "丁寧な仕事だが、記憶に残るかは微妙。", date: "2025-04-16", userType: "DI" },
+  { id: 129, storeId: 5, userId: "s81", userName: "Miharu U80.", preExpect: "low", result: "Expected", comment: "期待通りの安定感。", date: "2025-05-09", userType: "DC" },
+  { id: 130, storeId: 5, userId: "s8", userName: "Kento U07.", preExpect: "low", result: "Good", comment: "今まで行った中でも上位に入る体験。", date: "2025-03-24", userType: "DC" },
+  { id: 131, storeId: 5, userId: "s82", userName: "Sosuke U81.", preExpect: "low", result: "Good", comment: "コスパを超えた体験。リピート確定。", date: "2025-01-05", userType: "DC" },
+  { id: 132, storeId: 5, userId: "s79", userName: "Arisa U78.", preExpect: "low", result: "Good", comment: "今まで行った中でも上位に入る体験。", date: "2025-02-17", userType: "DC" },
+  { id: 133, storeId: 5, userId: "s92", userName: "Rui U91.", preExpect: "low", result: "Expected", comment: "サービスは良かったが料理は普通。", date: "2025-03-23", userType: "DC" },
+  { id: 134, storeId: 6, userId: "s93", userName: "Akane U92.", preExpect: "low", result: "Good", comment: "素晴らしい体験。スタッフの心配りも完璧。", date: "2025-02-01", userType: "BI" },
+  { id: 135, storeId: 6, userId: "s60", userName: "Minato U59.", preExpect: "normal", result: "Good", comment: "今まで行った中でも上位に入る体験。", date: "2025-02-02", userType: "BI" },
+  { id: 136, storeId: 6, userId: "s6", userName: "Ren U05.", preExpect: "normal", result: "Good", comment: "連れていった友人にも大好評だった。", date: "2025-05-16", userType: "BI" },
+  { id: 137, storeId: 6, userId: "s69", userName: "Kokona U68.", preExpect: "normal", result: "Good", comment: "素晴らしい体験。スタッフの心配りも完璧。", date: "2025-05-05", userType: "BI" },
+  { id: 138, storeId: 6, userId: "s86", userName: "Seira U85.", preExpect: "low", result: "Good", comment: "想像以上にレベルが高く、感動した。", date: "2025-01-12", userType: "BI" },
+  { id: 139, storeId: 6, userId: "s19", userName: "Naoto U18.", preExpect: "normal", result: "Good", comment: "期待を裏切られた——良い方向に。", date: "2025-03-05", userType: "BC" },
+  { id: 140, storeId: 6, userId: "s7", userName: "Saki U06.", preExpect: "low", result: "Expected", comment: "期待通りの安定感。", date: "2025-05-19", userType: "BC" },
+  { id: 141, storeId: 6, userId: "s98", userName: "Shouta U97.", preExpect: "low", result: "Expected", comment: "水準は高いが驚きはなかった。", date: "2025-05-23", userType: "BC" },
+  { id: 142, storeId: 6, userId: "s43", userName: "Kazuki U42.", preExpect: "normal", result: "Good", comment: "静かな空間で集中して食べられた。", date: "2025-02-11", userType: "BC" },
+  { id: 143, storeId: 6, userId: "s55", userName: "Amane U54.", preExpect: "normal", result: "Expected", comment: "値段相応の体験だった。", date: "2025-06-02", userType: "BC" },
+  { id: 144, storeId: 6, userId: "s51", userName: "Kaname U50.", preExpect: "normal", result: "Expected", comment: "丁寧な仕事だが、記憶に残るかは微妙。", date: "2025-06-06", userType: "BC" },
+  { id: 145, storeId: 6, userId: "s25", userName: "Ryota U24.", preExpect: "high", result: "Expected", comment: "コンセプトは好きだが印象が薄かった。", date: "2025-01-10", userType: "DI" },
+  { id: 146, storeId: 6, userId: "s54", userName: "Reon U53.", preExpect: "high", result: "Below", comment: "ピークを過ぎた感じがした。", date: "2025-02-18", userType: "DI" },
+  { id: 147, storeId: 6, userId: "s26", userName: "Ayaka U25.", preExpect: "normal", result: "Below", comment: "期待が高すぎたのか、全体的に物足りなかった。", date: "2025-04-12", userType: "DI" },
+  { id: 148, storeId: 6, userId: "s52", userName: "Itsuki U51.", preExpect: "normal", result: "Below", comment: "ピークを過ぎた感じがした。", date: "2025-01-19", userType: "DI" },
+  { id: 149, storeId: 6, userId: "s75", userName: "Kain U74.", preExpect: "high", result: "Expected", comment: "悪くはないが、特別感はなかった。", date: "2025-01-12", userType: "DI" },
+  { id: 150, storeId: 6, userId: "s92", userName: "Rui U91.", preExpect: "low", result: "Expected", comment: "値段相応の体験だった。", date: "2025-04-14", userType: "DC" },
+  { id: 151, storeId: 6, userId: "s5", userName: "Mio U04.", preExpect: "high", result: "Below", comment: "コスパを考えると、もう少し頑張ってほしかった。", date: "2025-01-27", userType: "DC" },
+  { id: 152, storeId: 6, userId: "s8", userName: "Kento U07.", preExpect: "high", result: "Below", comment: "友人に勧められて来たが、自分には刺さらなかった。", date: "2025-01-18", userType: "DC" },
+  { id: 153, storeId: 6, userId: "s16", userName: "Kana U15.", preExpect: "low", result: "Below", comment: "雰囲気は良いが、肝心の料理が自分好みではなかった。", date: "2025-02-11", userType: "DC" },
+  { id: 154, storeId: 6, userId: "s73", userName: "Ryusei U72.", preExpect: "low", result: "Expected", comment: "コンセプトは好きだが印象が薄かった。", date: "2025-05-20", userType: "DC" },
+  { id: 155, storeId: 6, userId: "s35", userName: "Yuya U34.", preExpect: "normal", result: "Expected", comment: "期待通りの安定感。", date: "2025-01-17", userType: "DC" },
+  { id: 156, storeId: 6, userId: "s83", userName: "Kokomi U82.", preExpect: "normal", result: "Expected", comment: "期待通りの安定感。", date: "2025-04-01", userType: "DC" }
+];
+
 const USER_TYPES = {
   BI: { label: "Bold × Ingredient", icon: "🔥", desc: "濃い味 × 素材重視", color: "#C0392B" },
   BC: { label: "Bold × Composition", icon: "⚡", desc: "濃い味 × バランス重視", color: "#8E44AD" },
@@ -27,14 +287,39 @@ const USER_TYPES = {
   DC: { label: "Delicate × Composition", icon: "✨", desc: "繊細な味 × バランス重視", color: "#2980B9" },
 };
 
-// ─── Gap Calculation ──────────────────────────────────────────────────────────
+// ─── 期待値ギャップの定義 ────────────────────────────────────────────────────
+//
+//  「期待値」と「体験の結果」の意味的な対応で判定する。
+//  数値差分ではなく、各組み合わせを直接マッピングする方式。
+//
+//  超越（+1）: 期待を上回る体験だった
+//    low  + Good     = 低期待だったのに良かった
+//    normal + Good   = 普通に期待して良かった
+//    high + Good     = 高期待だったのにさらに上回った  ← 最高
+//
+//  一致（0）: 期待通りの体験だった
+//    low  + Expected = 低期待で、まあその通りだった
+//    normal + Expected = 普通に期待通り
+//    high + Expected = 高期待で、その通りだった
+//
+//  乖離（-1）: 期待を下回る体験だった
+//    low  + Below    = 低期待だったのにさらに下回った
+//    normal + Below  = 普通に期待してガッカリ
+//    high + Below    = 高期待だったのに裏切られた  ← 最悪
+//
+//  value: 超越=1 / 一致=0 / 乖離=-1（マッチスコア計算に使用）
+
+const GAP_MAP = {
+  low:    { Good: 1,  Expected: 0,  Below: -1 },
+  normal: { Good: 1,  Expected: 0,  Below: -1 },
+  high:   { Good: 1,  Expected: 0,  Below: -1 },
+};
+
 function calcGap(preExpect, result) {
-  const expectMap = { low: -1, normal: 0, high: 1 };
-  const resultMap = { Good: 1, Expected: 0, Below: -1 };
-  const gap = resultMap[result] - expectMap[preExpect];
-  if (gap >= 1) return { label: "超越", color: "#1abc9c", emoji: "🚀", value: gap };
-  if (gap === 0) return { label: "一致", color: "#f39c12", emoji: "✓", value: gap };
-  return { label: "乖離", color: "#e74c3c", emoji: "↓", value: gap };
+  const value = GAP_MAP[preExpect]?.[result] ?? 0;
+  if (value === 1)  return { label: "超越", color: "#1abc9c", emoji: "🚀", value };
+  if (value === 0)  return { label: "一致", color: "#f39c12", emoji: "✓",  value };
+  return              { label: "乖離", color: "#e74c3c", emoji: "↓",  value };
 }
 
 function getGapStats(reviews) {
@@ -45,424 +330,902 @@ function getGapStats(reviews) {
   return { beyond, match, below, total: reviews.length };
 }
 
-// ─── Main App ─────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── RECOMMENDATION ENGINE ──────────────────────────────────────────────────────
+//
+//  設計方針：calcMatchScore() のシグネチャを固定し、中身だけ差し替えられる構造。
+//
+//  引数:  storeId   - 対象店舗ID
+//         user      - ログイン中のユーザーオブジェクト
+//         reviews   - 全レビュー配列
+//         stores    - 全店舗配列（Level2以降で使用）
+//
+//  戻り値: { score: 0-100, reason: string, genre?: string } | null
+//
+//  ▼ Level1（現在）: ジャンル別タイプ重み付きマッチ率
+//  ▼ Level2（予定）: 協調フィルタリング（ユーザー履歴ベース）
+//  ▼ Level3（予定）: 多軸プロファイル × ジャンル × 協調 の複合スコア
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── 共通ユーティリティ ────────────────────────────────────────────────────────
+
+// ギャップを 0-100 の数値に変換（全レベル共通）
+// ギャップを 0-100 のスコアに変換（全レベル共通）
+//
+// 「結果」だけでなく「期待値×結果」の組み合わせでスコアを決定する。
+// 理由: 「high期待で期待通り(一致)」は十分に良い体験であり、
+//       「low期待で期待通り(一致)」より高く評価すべきため。
+//
+//                 Good   Expected  Below
+//   high期待  →  100      75        0
+//   normal期待→   90      50       15
+//   low期待   →   80      30       25
+//
+// ポイント:
+//  - highExpected(75) > low+Good(80)の差は意図的。
+//    「高い期待に応えた」は「低期待で驚いた」より安定した推薦根拠になる。
+//  - low+Below(25) > high+Below(0): 低期待でさらに下回るのは相当悪いが、
+//    high期待を完全に裏切るより軽微とみなす。
+
+// ─── マッチスコアの点数テーブル ─────────────────────────────────────────────
+//
+//  スコアは -100〜+100 の範囲。マイナスは「積極的に合わない」を意味する。
+//
+//  設計思想：
+//   - 加点側（Good）: 期待値が高くても超えた体験ほど価値が高い
+//   - 中立（Expected）: 期待通り。high期待を満たすことは十分に良い
+//   - 減点側（Below）: 期待値が高いほど失望度が深刻
+//     「周りが美味しいと言っていたのに合わなかった」(high+Below)が最も強い警告
+//
+//                 Good   Expected  Below
+//   high期待  →  100      75      -80
+//   normal期待→   90      50      -40
+//   low期待   →   80      20      -20
+
+const GAP_SCORE_MAP = {
+  high:   { Good: 100, Expected: 75, Below: -80 },
+  normal: { Good: 90,  Expected: 50, Below: -40 },
+  low:    { Good: 80,  Expected: 20, Below: -20 },
+};
+
+function gapToScore(review) {
+  return GAP_SCORE_MAP[review.preExpect]?.[review.result] ?? 50;
+}
+
+// ── ヒット判定 ───────────────────────────────────────────────────────────────
+//
+//  ヒット = 「行って良かった」と言える体験
+//
+//  定義:
+//   ① result が Good（期待値に関わらず期待を超えた）
+//   ② preExpect が high かつ result が Expected
+//      → 「高い評判を聞いて行って、実際に良かった」
+//        これは推薦に値する体験であり、ヒットに含める
+//
+//  ノンヒット:
+//   - normal/low + Expected: 普通または想定内の普通。積極推薦にはならない
+//   - any + Below:           期待を下回った。明確なミス
+
+function isHit(review) {
+  if (review.result === "Good") return true;
+  if (review.preExpect === "high" && review.result === "Expected") return true;
+  return false;
+}
+
+// ヒット率 = ヒット件数 / 総件数（0〜1）
+function calcHitRate(reviews) {
+  if (!reviews.length) return null;
+  return reviews.filter(isHit).length / reviews.length;
+}
+
+// スコア群の分散を計算してSPLIT判定する（全レベル共通）
+// variance が高い = 合う人と合わない人がはっきり分かれる
+function calcVariance(scores) {
+  if (scores.length < 2) return 0;
+  const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+  return scores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / scores.length;
+}
+
+// SPLIT判定: 同タイプの体験が大きく二極化しているか
+// variance >= 900 ≒ 標準偏差30以上（例: 80と20が混在）を SPLIT とみなす
+const SPLIT_VARIANCE_THRESHOLD = 900;
+
+// タイプ同士の親和度（全レベル共通）
+//   完全一致=1.0 / 1軸一致=0.5 / 完全異=0.2
+function typeAffinity(typeA, typeB) {
+  if (typeA === typeB) return 1.0;
+  if (typeA[0] === typeB[0] || typeA[1] === typeB[1]) return 0.5;
+  return 0.2;
+}
+
+// ── Level 1: ジャンル別マッチ率 ───────────────────────────────────────────────
+//
+//  設計思想：
+//   「自分の味覚感覚に合う店かどうか」を正直に反映することが最優先。
+//   同タイプユーザーが期待を超えられたかを軸に判断し、
+//   データが不足している場合のみ補助的な情報で補う。
+//
+//  優先順位:
+//   ① 同タイプが2件以上  → 同タイプのみで判断（最も信頼性高）
+//   ② 同タイプが1件      → 同タイプを重視しつつ隣接タイプで補完
+//   ③ 同タイプが0件      → 隣接タイプ → 全タイプ → ジャンル傾向の順で補完
+//      ※補完データを使う場合はスコアを中央値方向に引き寄せ、誤誘導を防ぐ
+//
+//  ジャンル補正は「同タイプデータが全くない場合」にのみ薄く加味する。
+//  同タイプの声がある限り、それが最優先の判断材料。
+
+function calcMatchScore_Level1(storeId, user, reviews, stores) {
+  const store = stores.find(s => s.id === storeId);
+  if (!store) return null;
+
+  const storeReviews = reviews.filter(r => r.storeId === storeId);
+  if (!storeReviews.length) return null;
+
+  const sameTypeReviews = storeReviews.filter(r => r.userType === user.userType);
+  const adjacentTypeReviews = storeReviews.filter(r =>
+    r.userType !== user.userType &&
+    (r.userType[0] === user.userType[0] || r.userType[1] === user.userType[1])
+  );
+  const otherTypeReviews = storeReviews.filter(r =>
+    r.userType !== user.userType &&
+    r.userType[0] !== user.userType[0] &&
+    r.userType[1] !== user.userType[1]
+  );
+
+  // ══════════════════════════════════════════════════════════════════════
+  // MATCHスコア算出：ヒット率 × 品質係数 − ミス率 × 深刻度係数
+  //
+  //  ヒット = Good（期待値問わず超えた）+ high+Expected（高期待に応えた）
+  //  ミス   = any + Below
+  //
+  //  rawScore = hitRate × avgHitScore − missRate × avgMissWeight
+  //
+  //  例:
+  //    全員 high+Good  → 1.0 × 100 − 0 = 100
+  //    全員 high+Exp   → 1.0 × 75  − 0 = 75
+  //    全員 low+Good   → 1.0 × 80  − 0 = 80
+  //    50% high+Good / 50% high+Below
+  //                   → 0.5×100 − 0.5×80 = +10 (UNCERTAIN / SPLIT)
+  //    全員 high+Below → 0 − 1.0×80 = -80
+  //
+  //  これにより:
+  //  - ヒット率が同じでも品質（期待値×結果の深さ）が反映される
+  //  - ミスの深刻度（high期待ほど重い）が減点に直結する
+  // ══════════════════════════════════════════════════════════════════════
+
+  function calcRawScore(reviewList) {
+    if (!reviewList.length) return null;
+
+    const hits  = reviewList.filter(isHit);
+    const misses = reviewList.filter(r => r.result === "Below");
+
+    const hitRate  = hits.length / reviewList.length;
+    const missRate = misses.length / reviewList.length;
+
+    // ヒットの平均点（good/high+expectedそれぞれの点数）
+    const avgHitScore = hits.length
+      ? hits.reduce((sum, r) => sum + gapToScore(r), 0) / hits.length
+      : 0;
+
+    // ミスの平均深刻度（high+Below=-80, normal+Below=-40, low+Below=-20の絶対値）
+    const avgMissSeverity = misses.length
+      ? misses.reduce((sum, r) => sum + Math.abs(gapToScore(r)), 0) / misses.length
+      : 0;
+
+    return hitRate * avgHitScore - missRate * avgMissSeverity;
+  }
+
+  let rawScore;
+  let confidence;
+  const n = sameTypeReviews.length;
+
+  if (n >= 3) {
+    // ① 同タイプ3件以上 → 同タイプのみで純粋計算
+    rawScore = calcRawScore(sameTypeReviews);
+    confidence = n >= 5 ? "high" : "medium";
+
+  } else if (n >= 1) {
+    // ② 同タイプ1〜2件 → 同タイプを重視、隣接で薄く補完
+    const sameRaw = calcRawScore(sameTypeReviews) ?? 0;
+    const adjRaw  = calcRawScore(adjacentTypeReviews) ?? sameRaw;
+    rawScore = sameRaw * 0.85 + adjRaw * 0.15;
+    confidence = "low";
+
+  } else if (adjacentTypeReviews.length > 0) {
+    // ③ 同タイプなし → 隣接タイプで補完
+    const adjRaw   = calcRawScore(adjacentTypeReviews) ?? 0;
+    const otherRaw = calcRawScore(otherTypeReviews) ?? 0;
+    rawScore = adjacentTypeReviews.length
+      ? adjRaw * 0.8 + (otherTypeReviews.length ? otherRaw * 0.2 : 0)
+      : 0;
+    confidence = "estimate_adjacent";
+
+  } else {
+    // ④ データなし → 異タイプのジャンル傾向で推定
+    const genreReviews = reviews.filter(r => {
+      const s = stores.find(st => st.id === r.storeId);
+      return s && s.category === store.category && r.storeId !== storeId;
+    });
+    rawScore = calcRawScore([...otherTypeReviews, ...genreReviews]) ?? 0;
+    confidence = "estimate_genre";
+  }
+
+  // confidence に応じた収縮（ゼロ基準）
+  const shrink = (s, f) => s * f;
+  const displayScore =
+    confidence === "high"             ? Math.round(rawScore) :
+    confidence === "medium"           ? Math.round(shrink(rawScore, 0.95)) :
+    confidence === "low"              ? Math.round(shrink(rawScore, 0.80)) :
+    confidence === "estimate_adjacent"? Math.round(shrink(rawScore, 0.55)) :
+                                        Math.round(shrink(rawScore, 0.40));
+
+  // SPLIT判定: ヒット率とミス率が両方 25% 以上 → 二極化している
+  const hitRate  = sameTypeReviews.filter(isHit).length / (n || 1);
+  const missRate = sameTypeReviews.filter(r => r.result === "Below").length / (n || 1);
+  const isSplit  = n >= 4 && hitRate >= 0.25 && missRate >= 0.25;
+
+  return {
+    score: displayScore,
+    rawScore: Math.round(rawScore ?? 0),
+    genre: store.category,
+    confidence,
+    hasSameTypeData: n > 0,
+    sameTypeCount: n,
+    isSplit,
+    hitRate: Math.round(hitRate * 100),  // UI表示用
+  };
+}
+// ── エンジン切替口（ここだけ変えれば Level2/3 に移行できる） ──────────────────
+function calcMatchScore(storeId, user, reviews, stores) {
+  // Level2 に切り替える時はここを calcMatchScore_Level2(...) に変更するだけ
+  return calcMatchScore_Level1(storeId, user, reviews, stores);
+}
+
+// ── ジャンル別マッチサマリー（プロフィール画面用） ───────────────────────────
+//   そのユーザーがジャンルごとにどの程度「合いやすい」かを集計
+function calcGenreAffinityMap(user, reviews, stores) {
+  const genreMap = {};
+  stores.forEach(store => {
+    const result = calcMatchScore(store.id, user, reviews, stores);
+    if (!result) return;
+    if (!genreMap[store.category]) genreMap[store.category] = { scores: [], genre: store.category };
+    genreMap[store.category].scores.push(result.score);
+  });
+  return Object.values(genreMap).map(g => ({
+    genre: g.genre,
+    avgScore: Math.round(g.scores.reduce((a, b) => a + b, 0) / g.scores.length),
+    storeCount: g.scores.length,
+  })).sort((a, b) => b.avgScore - a.avgScore);
+}
+
+// ── スコア → 表示ラベル・色の変換 ───────────────────────────────────────────
+//
+//   100〜 75 : HIGH MATCH     緑   同タイプが安定して期待を超えている
+//    74〜 50 : LIKELY MATCH   金   同タイプが概ね良い体験をしている
+//    49〜  0 : UNCERTAIN      灰   データ不足または評価が中立
+//    -1〜-49 : UNLIKELY MATCH 赤薄 同タイプがやや失望している傾向
+//   -50〜    : BAD MATCH      赤濃 同タイプが明確に失望している
+
+function scoreToDisplay(score, isSplit) {
+  // SPLITはスコアがプラス圏（0以上）の場合のみ適用する
+  // スコアがマイナスの場合は「合わない」方向が明確なので BAD/UNLIKELY を優先する
+  // 例: BIが鮨でBelowが多い → 分散は大きいがスコアはマイナス → BAD MATCH
+  if (isSplit && score >= 0) return { label: "SPLIT",          color: "#e67e22", tier: "split"    };
+  if (score >= 75)           return { label: "HIGH MATCH",     color: "#1abc9c", tier: "high"     };
+  if (score >= 50)           return { label: "LIKELY MATCH",   color: "#f39c12", tier: "likely"   };
+  if (score >= 0)            return { label: "UNCERTAIN",      color: "#7a7268", tier: "uncertain" };
+  if (score >= -49)          return { label: "UNLIKELY MATCH", color: "#e74c3c", tier: "unlikely"  };
+  return                            { label: "BAD MATCH",      color: "#c0392b", tier: "bad"       };
+}
+
+function MatchBadge({ matchResult }) {
+  if (!matchResult) return null;
+  const { score, genre, confidence, sameTypeCount, isSplit } = matchResult;
+
+  const { label, color, tier } = scoreToDisplay(score, isSplit);
+  const isNegative = score < 0;
+  const isEstimate = confidence === "estimate_adjacent" || confidence === "estimate_genre";
+  const absScore = Math.abs(score);
+
+  // dataLabelもscoreToDisplayと同じ条件で「賛否両論」を出す
+  // score<0の場合はisSplit=trueでも「賛否両論」ではなく通常のデータ件数表示
+  const showAsSplit = isSplit && score >= 0;
+  const dataLabel = showAsSplit
+    ? `同タイプ${sameTypeCount}件・賛否両論`
+    : sameTypeCount >= 1
+    ? `同タイプ ${sameTypeCount}件のデータ`
+    : isEstimate
+    ? "推定値（同タイプデータなし）"
+    : "参考値";
+
+  // 円グラフ: マイナスは逆回転（減算方向）で表現
+  const circumference = 87.96;
+  const filled = (absScore / 100) * circumference;
+  const dashArray = isSplit
+    ? `${circumference * 0.35} 4 ${circumference * 0.35} ${circumference}`
+    : isEstimate
+    ? `${filled * 0.45} 3 ${filled * 0.45} ${circumference}`
+    : sameTypeCount === 1
+    ? `${filled * 0.7} 2 ${filled * 0.3} ${circumference}`
+    : `${filled} ${circumference}`;
+
+  // マイナスの場合: 円の背景をうっすら赤く塗り、弧を逆方向（警告感）
+  const svgRotation = isNegative ? "rotate(90deg)" : "rotate(-90deg)";
+
+  return (
+    <div style={{
+      display: "inline-flex", alignItems: "center", gap: 8,
+      background: color + (isNegative ? "22" : "18"),
+      border: `1px solid ${isEstimate ? color + "44" : color + "77"}`,
+      borderRadius: 3, padding: "5px 10px"
+    }}>
+      <div style={{ width: 36, height: 36, position: "relative", flexShrink: 0 }}>
+        <svg viewBox="0 0 36 36" style={{ width: 36, height: 36, transform: svgRotation }}>
+          {/* ベースリング */}
+          <circle cx="18" cy="18" r="14" fill="none" stroke="#1e1c1a" strokeWidth="3" />
+          {/* マイナスの場合は全周うっすら赤で警告感を出す */}
+          {isNegative && (
+            <circle cx="18" cy="18" r="14" fill="none" stroke={color} strokeWidth="3" opacity="0.15"
+              strokeDasharray={`${circumference} 0`} />
+          )}
+          {/* スコア弧 */}
+          <circle cx="18" cy="18" r="14" fill="none" stroke={color} strokeWidth="3"
+            strokeDasharray={dashArray} strokeLinecap="round"
+            opacity={isEstimate ? 0.5 : 1}
+          />
+        </svg>
+        <span style={{
+          position: "absolute", inset: 0, display: "flex", alignItems: "center",
+          justifyContent: "center", fontSize: 8, color, fontWeight: 700,
+          opacity: isEstimate ? 0.6 : 1
+        }}>
+          {isNegative ? "−" : ""}{absScore}
+        </span>
+      </div>
+      <div>
+        <p style={{ fontSize: 10, color, letterSpacing: "0.1em", fontWeight: 700, opacity: isEstimate ? 0.7 : 1 }}>
+          {label}
+        </p>
+        <p style={{ fontSize: 10, color: sameTypeCount >= 1 ? "#7a7268" : "#4a4440", marginTop: 1 }}>
+          {dataLabel}
+        </p>
+        {genre && <p style={{ fontSize: 9, color: "#3a3028", marginTop: 1 }}>{genre}ジャンル</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState("home");
-  const [stores, setStores] = useState(INITIAL_STORES);
-  const [reviews, setReviews] = useState(INITIAL_REVIEWS);
+  const [stores, setStores] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
-  const [users, setUsers] = useState([
-    { id: "u1", name: "Admin", email: "admin@example.com", password: "admin", isAdmin: true, userType: "DC" },
-    { id: "u2", name: "Kaito M.", email: "kaito@example.com", password: "pass", isAdmin: false, userType: "BB" },
-  ]);
-  const [selectedStore, setSelectedStore] = useState(null);
+  const [users, setUsers] = useState([]);
   const [pageParam, setPageParam] = useState(null);
   const [searchQ, setSearchQ] = useState("");
   const [notification, setNotification] = useState(null);
+  const [follows, setFollows] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  const navigate = (p, param = null) => {
-    setPage(p);
-    setPageParam(param);
-    window.scrollTo(0, 0);
-  };
+  // ── Supabase初期ロード ──────────────────────────────────
+  useEffect(() => {
+    // セッション復元
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        supabase.from("profiles").select("*").eq("id", session.user.id).single()
+          .then(({ data }) => {
+            if (data) setCurrentUser({
+              ...data,
+              email: session.user.email,
+              userType: data.user_type,
+              isAdmin: data.is_admin,
+            });
+          });
+      }
+    });
+    // 店舗・レビュー・ユーザー・フォローを並列取得
+    Promise.all([
+      supabase.from("stores").select("*").order("id"),
+      supabase.from("reviews").select("*").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("*"),
+      supabase.from("follows").select("*"),
+    ]).then(([storesRes, reviewsRes, profilesRes, followsRes]) => {
+      if (storesRes.data) setStores(storesRes.data.map(s => ({
+        id: s.id, name: s.name, category: s.category, area: s.area,
+        priceRange: s.price_range, description: s.description, image: s.image,
+      })));
+      if (reviewsRes.data) setReviews(reviewsRes.data.map(r => ({
+        id: r.id, storeId: r.store_id, userId: r.user_id, userName: r.user_name,
+        userType: r.user_type, preExpect: r.pre_expect, result: r.result,
+        comment: r.comment, date: r.date,
+      })));
+      if (profilesRes.data) setUsers(profilesRes.data.map(p => ({
+        ...p, userType: p.user_type, isAdmin: p.is_admin,
+      })));
+      if (followsRes.data) {
+        const followMap = {};
+        followsRes.data.forEach(f => {
+          if (!followMap[f.follower_id]) followMap[f.follower_id] = [];
+          followMap[f.follower_id].push(f.followee_id);
+        });
+        setFollows(followMap);
+      }
+      setLoading(false);
+    });
 
-  const notify = (msg, type = "success") => {
-    setNotification({ msg, type });
-    setTimeout(() => setNotification(null), 3000);
-  };
+    // 認証状態の変化を監視
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) setCurrentUser(null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
-  const props = { page, navigate, stores, setStores, reviews, setReviews, currentUser, setCurrentUser, users, setUsers, selectedStore, setSelectedStore, pageParam, searchQ, setSearchQ, notify };
+  const navigate = (p, param = null) => { setPage(p); setPageParam(param); window.scrollTo(0, 0); };
+  const notify = (msg, type = "success") => { setNotification({ msg, type }); setTimeout(() => setNotification(null), 3000); };
+  const props = { navigate, stores, setStores, reviews, setReviews, currentUser, setCurrentUser, users, setUsers, pageParam, searchQ, setSearchQ, notify, follows, setFollows };
+
+  if (loading) return (
+    <div style={{ fontFamily: "'Noto Serif JP','Georgia',serif", background: "#0c0c0e", minHeight: "100vh", color: "#e8e0d4", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ textAlign: "center" }}>
+        <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontStyle: "italic", color: "#c9a96e", marginBottom: 16 }}>Gap Review</p>
+        <p style={{ fontSize: 12, color: "#3a3028", letterSpacing: "0.2em" }}>LOADING...</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div style={{ fontFamily: "'Noto Serif JP', 'Georgia', serif", background: "#0c0c0e", minHeight: "100vh", color: "#e8e0d4" }}>
+    <div style={{ fontFamily: "'Noto Serif JP','Georgia',serif", background: "#0c0c0e", minHeight: "100vh", color: "#e8e0d4" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #0c0c0e; }
-        ::-webkit-scrollbar-thumb { background: #3a3028; border-radius: 2px; }
-        input, textarea, select { font-family: inherit; }
-        button { cursor: pointer; font-family: inherit; }
-        a { color: inherit; text-decoration: none; }
-        .hover-lift { transition: transform 0.2s, box-shadow 0.2s; }
-        .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.5s ease forwards; }
-        .gap-beyond { color: #1abc9c; }
-        .gap-match { color: #f39c12; }
-        .gap-below { color: #e74c3c; }
+        *{box-sizing:border-box;margin:0;padding:0}
+        input,textarea,select{font-size:16px!important;font-family:inherit;-webkit-text-size-adjust:none;touch-action:manipulation}
+        button{cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;transition:filter 0.15s ease,transform 0.1s ease}
+        button:active{filter:brightness(0.75);transform:scale(0.97)}
+        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0c0c0e}::-webkit-scrollbar-thumb{background:#3a3028;border-radius:2px}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+        .fade-in{animation:fadeIn 0.45s ease forwards}
+        .hover-lift{transition:transform 0.2s,box-shadow 0.2s}.hover-lift:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.5)}
       `}</style>
 
       {notification && (
-        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: notification.type === "success" ? "#1abc9c" : "#e74c3c", color: "#fff", padding: "12px 24px", borderRadius: 4, animation: "slideDown 0.3s ease", fontSize: 14, letterSpacing: "0.05em" }}>
+        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: notification.type === "success" ? "#1abc9c" : "#e74c3c", color: "#fff", padding: "12px 22px", borderRadius: 4, animation: "slideDown 0.3s ease", fontSize: 14, letterSpacing: "0.05em" }}>
           {notification.msg}
         </div>
       )}
 
       <NavBar {...props} />
-
       <div style={{ paddingTop: 64 }}>
         {page === "home" && <HomePage {...props} />}
         {page === "search" && <SearchPage {...props} />}
         {page === "store" && <StorePage {...props} />}
         {page === "review-form" && <ReviewFormPage {...props} />}
         {page === "login" && <LoginPage {...props} />}
-        {page === "register" && <RegisterPage {...props} />}
+        {page === "register" && <RegisterPage {...props} stores={stores} />}
         {page === "profile" && <ProfilePage {...props} />}
         {page === "request-store" && <RequestStorePage {...props} />}
         {page === "admin" && <AdminPage {...props} />}
+        {page === "user-profile" && <UserProfilePage {...props} />}
       </div>
     </div>
   );
 }
 
-// ─── NavBar ───────────────────────────────────────────────────────────────────
-function NavBar({ navigate, currentUser, page, searchQ, setSearchQ }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+function NavBar({ navigate, currentUser, setCurrentUser, searchQ, setSearchQ, notify }) {
   const [localQ, setLocalQ] = useState(searchQ);
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setSearchQ(localQ);
-    navigate("search");
-  };
+  const handleSearch = (e) => { e.preventDefault(); setSearchQ(localQ); navigate("search"); };
+  const logout = async () => { await supabase.auth.signOut(); setCurrentUser(null); notify("ログアウトしました"); navigate("home"); };
 
   return (
-    <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(12,12,14,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid #1e1c1a", height: 64, display: "flex", alignItems: "center", padding: "0 24px", gap: 24 }}>
-      <button onClick={() => navigate("home")} style={{ background: "none", border: "none", color: "#e8e0d4", fontSize: 18, fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>
-        Gap Review
-      </button>
-
-      <form onSubmit={handleSearch} style={{ flex: 1, maxWidth: 400 }}>
-        <input
-          value={localQ}
-          onChange={e => setLocalQ(e.target.value)}
-          placeholder="店舗を検索..."
-          style={{ width: "100%", background: "#1a1814", border: "1px solid #2a2620", borderRadius: 3, padding: "8px 14px", color: "#e8e0d4", fontSize: 13, outline: "none", letterSpacing: "0.05em" }}
-        />
+    <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(12,12,14,0.96)", backdropFilter: "blur(12px)", borderBottom: "1px solid #1e1c1a", height: 64, display: "flex", alignItems: "center", padding: "0 16px", gap: 14 }}>
+      <button onClick={() => navigate("home")} style={{ background: "none", border: "none", color: "#e8e0d4", fontSize: 16, fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>Gap Review</button>
+      <form onSubmit={handleSearch} style={{ flex: 1, maxWidth: 320 }}>
+        <input value={localQ} onChange={e => setLocalQ(e.target.value)} placeholder="店舗を検索..." style={{ width: "100%", background: "#1a1814", border: "1px solid #2a2620", borderRadius: 3, padding: "8px 12px", color: "#e8e0d4", outline: "none" }} />
       </form>
-
-      <div style={{ display: "flex", gap: 20, alignItems: "center", marginLeft: "auto" }}>
-        <button onClick={() => navigate("search")} style={{ background: "none", border: "none", color: "#9a9090", fontSize: 13, letterSpacing: "0.08em" }}>
-          一覧
-        </button>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
+        <button onClick={() => navigate("search")} style={{ background: "none", border: "none", color: "#9a9090", fontSize: 13 }}>一覧</button>
         {currentUser ? (
           <>
-            <button onClick={() => navigate("profile")} style={{ background: "none", border: "none", color: "#9a9090", fontSize: 13, letterSpacing: "0.08em" }}>
-              {currentUser.name}
-            </button>
-            {currentUser.isAdmin && (
-              <button onClick={() => navigate("admin")} style={{ background: "none", border: "none", color: "#c9a96e", fontSize: 12, letterSpacing: "0.1em", border: "1px solid #c9a96e", padding: "4px 10px", borderRadius: 2 }}>
-                管理
-              </button>
-            )}
+            <button onClick={() => navigate("profile")} style={{ background: "none", border: "none", color: "#9a9090", fontSize: 13, maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser.name}</button>
+            {currentUser.isAdmin && <button onClick={() => navigate("admin")} style={{ background: "none", border: "1px solid #c9a96e", color: "#c9a96e", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>管理</button>}
+            <button onClick={logout} style={{ background: "none", border: "1px solid #2a2620", color: "#5a5450", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>ログアウト</button>
           </>
         ) : (
-          <button onClick={() => navigate("login")} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", fontSize: 12, letterSpacing: "0.12em", padding: "8px 18px", borderRadius: 2, fontWeight: 600 }}>
-            ログイン
-          </button>
+          <button onClick={() => navigate("login")} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", fontSize: 12, letterSpacing: "0.1em", padding: "8px 16px", borderRadius: 2, fontWeight: 600 }}>ログイン</button>
         )}
       </div>
     </nav>
   );
 }
 
-// ─── Home Page ────────────────────────────────────────────────────────────────
 function HomePage({ navigate, stores, reviews, currentUser }) {
-  const featured = stores.slice(0, 3);
-
   return (
     <div className="fade-in">
-      {/* Hero */}
-      <div style={{ minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 24px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 40%, rgba(201,169,110,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
-        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 14, color: "#c9a96e", letterSpacing: "0.25em", marginBottom: 24, textTransform: "uppercase" }}>
-          Expectation Gap Review
-        </p>
-        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(40px, 7vw, 80px)", fontWeight: 300, lineHeight: 1.1, color: "#e8e0d4", marginBottom: 28, letterSpacing: "-0.02em" }}>
-          期待と体験の<br />
-          <em style={{ fontStyle: "italic", color: "#c9a96e" }}>差分</em>を可視化する
+      <div style={{ minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 20px", textAlign: "center", position: "relative" }}>
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 40%,rgba(201,169,110,0.06) 0%,transparent 70%)", pointerEvents: "none" }} />
+        <p style={{ fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", fontSize: 12, color: "#c9a96e", letterSpacing: "0.25em", marginBottom: 24, textTransform: "uppercase" }}>Expectation Gap Review</p>
+        <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(34px,7vw,76px)", fontWeight: 300, lineHeight: 1.1, color: "#e8e0d4", marginBottom: 28, letterSpacing: "-0.02em" }}>
+          期待と体験の<br /><em style={{ fontStyle: "italic", color: "#c9a96e" }}>差分</em>を可視化する
         </h1>
-        <p style={{ fontSize: 15, color: "#7a7268", maxWidth: 480, lineHeight: 1.9, letterSpacing: "0.06em", marginBottom: 48 }}>
-          点数評価に依存しない新しいレビューシステム。<br />
-          あなたの「期待」と「体験」のギャップが、真の評価軸になる。
+        <p style={{ fontSize: 14, color: "#7a7268", maxWidth: 420, lineHeight: 1.9, letterSpacing: "0.06em", marginBottom: 48 }}>
+          点数評価に依存しない新しいレビューシステム。<br />あなたの「期待」と「体験」のギャップが、真の評価軸になる。
         </p>
-        <div style={{ display: "flex", gap: 16 }}>
-          <button onClick={() => navigate("search")} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "14px 36px", fontSize: 13, letterSpacing: "0.15em", fontWeight: 600 }}>
-            店舗を探す
-          </button>
-          <button onClick={() => navigate(currentUser ? "review-form" : "login")} style={{ background: "none", border: "1px solid #3a3028", color: "#e8e0d4", padding: "14px 36px", fontSize: 13, letterSpacing: "0.15em" }}>
-            レビューを書く
-          </button>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+          <button onClick={() => navigate("search")} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "14px 32px", fontSize: 13, letterSpacing: "0.15em", fontWeight: 600 }}>店舗を探す</button>
+          <button onClick={() => navigate(currentUser ? "review-form" : "login")} style={{ background: "none", border: "1px solid #3a3028", color: "#e8e0d4", padding: "14px 32px", fontSize: 13, letterSpacing: "0.15em" }}>レビューを書く</button>
         </div>
       </div>
 
-      {/* How it works */}
-      <div style={{ padding: "60px 24px", maxWidth: 900, margin: "0 auto" }}>
+      <div style={{ padding: "60px 20px", maxWidth: 900, margin: "0 auto" }}>
         <SectionLabel>How It Works</SectionLabel>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 2, marginTop: 32 }}>
-          {[
-            { n: "01", title: "期待を設定", desc: "訪問前の期待値（低/普通/高）を記録する" },
-            { n: "02", title: "体験を評価", desc: "Good / Expected / Below の3択で体験を報告" },
-            { n: "03", title: "ギャップを可視化", desc: "差分が「超越・一致・乖離」として自動算出される" },
-          ].map(s => (
-            <div key={s.n} style={{ background: "#111012", padding: "36px 28px", borderLeft: "1px solid #1e1c1a" }}>
-              <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 42, color: "#2a2620", fontWeight: 300, marginBottom: 16 }}>{s.n}</p>
-              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 10, letterSpacing: "0.06em" }}>{s.title}</h3>
-              <p style={{ fontSize: 13, color: "#6a6258", lineHeight: 1.8, letterSpacing: "0.04em" }}>{s.desc}</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 2, marginTop: 28 }}>
+          {[["01","期待を設定","訪問前の期待値（低/普通/高）を記録する"],["02","体験を評価","Good / Expected / Below の3択で体験を報告"],["03","ギャップを可視化","差分が「超越・一致・乖離」として自動算出される"]].map(([n,t,d]) => (
+            <div key={n} style={{ background: "#111012", padding: "28px 22px", borderLeft: "1px solid #1e1c1a" }}>
+              <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 38, color: "#2a2620", fontWeight: 300, marginBottom: 12 }}>{n}</p>
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, letterSpacing: "0.06em" }}>{t}</h3>
+              <p style={{ fontSize: 12, color: "#6a6258", lineHeight: 1.8, letterSpacing: "0.04em" }}>{d}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Featured Stores */}
-      <div style={{ padding: "40px 24px 80px", maxWidth: 900, margin: "0 auto" }}>
+      <div style={{ padding: "40px 20px 80px", maxWidth: 900, margin: "0 auto" }}>
         <SectionLabel>注目の店舗</SectionLabel>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, marginTop: 32 }}>
-          {featured.map(store => (
-            <StoreCard key={store.id} store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} />
-          ))}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 14, marginTop: 28 }}>
+          {stores.slice(0, 3).map(store => <StoreCard key={store.id} store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} currentUser={currentUser} allReviews={reviews} allStores={stores} />)}
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Search Page ──────────────────────────────────────────────────────────────
-function SearchPage({ navigate, stores, reviews, searchQ, setSearchQ }) {
+function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearchQ }) {
   const [localQ, setLocalQ] = useState(searchQ);
-  const [sortBy, setSortBy] = useState("name");
-  const [filterCategory, setFilterCategory] = useState("all");
-
+  const [sortBy, setSortBy] = useState(currentUser ? "match" : "reviews");
+  const [filterCat, setFilterCat] = useState("all");
   const categories = ["all", ...new Set(stores.map(s => s.category))];
 
-  const filtered = stores
+  const storesWithScore = stores.map(s => ({
+    ...s,
+    matchResult: currentUser ? calcMatchScore(s.id, currentUser, reviews, stores) : null,
+    reviewCount: reviews.filter(r => r.storeId === s.id).length,
+  }));
+
+  const filtered = storesWithScore
     .filter(s => {
       const q = localQ.toLowerCase();
-      const matchQ = !q || s.name.includes(q) || s.category.includes(q) || s.area.includes(q);
-      const matchCat = filterCategory === "all" || s.category === filterCategory;
-      return matchQ && matchCat;
+      return (!q || s.name.includes(q) || s.category.includes(q) || s.area.includes(q)) && (filterCat === "all" || s.category === filterCat);
     })
     .sort((a, b) => {
-      if (sortBy === "name") return a.name.localeCompare(b.name, "ja");
-      if (sortBy === "reviews") return reviews.filter(r => r.storeId === b.id).length - reviews.filter(r => r.storeId === a.id).length;
-      return 0;
+      if (sortBy === "match" && currentUser) return ((b.matchResult?.score) ?? 0) - ((a.matchResult?.score) ?? 0);
+      if (sortBy === "reviews") return b.reviewCount - a.reviewCount;
+      return a.name.localeCompare(b.name, "ja");
     });
 
   return (
-    <div className="fade-in" style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 24px" }}>
+    <div className="fade-in" style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 16px" }}>
       <SectionLabel>店舗一覧</SectionLabel>
-
-      <div style={{ marginTop: 28, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <input
-          value={localQ}
-          onChange={e => { setLocalQ(e.target.value); setSearchQ(e.target.value); }}
-          placeholder="店名・エリア・カテゴリで検索..."
-          style={{ flex: 1, minWidth: 200, background: "#1a1814", border: "1px solid #2a2620", borderRadius: 3, padding: "10px 16px", color: "#e8e0d4", fontSize: 13, outline: "none" }}
-        />
-        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ background: "#1a1814", border: "1px solid #2a2620", color: "#9a9090", padding: "10px 14px", fontSize: 13, outline: "none", borderRadius: 3 }}>
+      {currentUser ? (
+        <div style={{ marginTop: 14, padding: "10px 14px", background: "#111012", border: "1px solid #1e1c1a", borderRadius: 3, display: "flex", alignItems: "center", gap: 8 }}>
+          <span>{USER_TYPES[currentUser.userType]?.icon}</span>
+          <p style={{ fontSize: 12, color: "#7a7268" }}>
+            <span style={{ color: USER_TYPES[currentUser.userType]?.color }}>{USER_TYPES[currentUser.userType]?.label}</span> のあなたへのマッチ率順に表示中
+          </p>
+        </div>
+      ) : (
+        <button onClick={() => navigate("login")}
+          style={{ marginTop: 14, width: "100%", background: "linear-gradient(90deg,#1a1814 0%,#1e1a14 100%)",
+            border: "1px solid #c9a96e44", borderRadius: 3, padding: "12px 16px",
+            display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left" }}>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", border: "2px dashed #c9a96e55",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ fontSize: 16 }}>?</span>
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 12, color: "#c9a96e", fontWeight: 600, letterSpacing: "0.06em", marginBottom: 2 }}>
+              あなたの味覚タイプに合う店舗を発見しよう
+            </p>
+            <p style={{ fontSize: 11, color: "#5a5450" }}>
+              ログインすると各店舗のマッチ率が表示されます
+            </p>
+          </div>
+          <span style={{ fontSize: 12, color: "#c9a96e", fontWeight: 600, letterSpacing: "0.08em", flexShrink: 0 }}>
+            ログイン →
+          </span>
+        </button>
+      )}
+      <div style={{ marginTop: 18, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <input value={localQ} onChange={e => { setLocalQ(e.target.value); setSearchQ(e.target.value); }} placeholder="店名・エリア・カテゴリ..." style={{ flex: 1, minWidth: 150, background: "#1a1814", border: "1px solid #2a2620", borderRadius: 3, padding: "10px 14px", color: "#e8e0d4", outline: "none" }} />
+        <select value={filterCat} onChange={e => setFilterCat(e.target.value)} style={{ background: "#1a1814", border: "1px solid #2a2620", color: "#9a9090", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
           {categories.map(c => <option key={c} value={c}>{c === "all" ? "全カテゴリ" : c}</option>)}
         </select>
-        <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: "#1a1814", border: "1px solid #2a2620", color: "#9a9090", padding: "10px 14px", fontSize: 13, outline: "none", borderRadius: 3 }}>
-          <option value="name">名前順</option>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: "#1a1814", border: "1px solid #2a2620", color: "#9a9090", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
+          {currentUser && <option value="match">マッチ率順</option>}
           <option value="reviews">レビュー数順</option>
+          <option value="name">名前順</option>
         </select>
       </div>
-
-      <p style={{ marginTop: 20, fontSize: 12, color: "#4a4440", letterSpacing: "0.08em" }}>{filtered.length} 件</p>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16, marginTop: 16 }}>
-        {filtered.map(store => (
-          <StoreCard key={store.id} store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} />
-        ))}
+      <p style={{ marginTop: 14, fontSize: 11, color: "#4a4440", letterSpacing: "0.08em" }}>{filtered.length} 件</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 14, marginTop: 12 }}>
+        {filtered.map(store => <StoreCard key={store.id} store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} currentUser={currentUser} allReviews={reviews} allStores={stores} precomputedResult={store.matchResult} />)}
       </div>
-
       {filtered.length === 0 && (
         <div style={{ textAlign: "center", padding: "80px 0", color: "#4a4440" }}>
-          <p style={{ fontSize: 40, marginBottom: 16 }}>🔍</p>
+          <p style={{ fontSize: 36, marginBottom: 14 }}>🔍</p>
           <p style={{ fontSize: 14, letterSpacing: "0.06em" }}>該当する店舗が見つかりません</p>
-          <button onClick={() => navigate("request-store")} style={{ marginTop: 20, background: "none", border: "1px solid #3a3028", color: "#c9a96e", padding: "10px 24px", fontSize: 12, letterSpacing: "0.1em", borderRadius: 2 }}>
-            店舗を申請する
-          </button>
+          <button onClick={() => navigate("request-store")} style={{ marginTop: 18, background: "none", border: "1px solid #3a3028", color: "#c9a96e", padding: "10px 22px", fontSize: 12, letterSpacing: "0.1em", borderRadius: 2 }}>店舗を申請する</button>
         </div>
       )}
     </div>
   );
 }
 
-// ─── Store Page ───────────────────────────────────────────────────────────────
 function StorePage({ navigate, stores, reviews, pageParam, currentUser }) {
-  const storeId = pageParam;
-  const store = stores.find(s => s.id === storeId);
-  const storeReviews = reviews.filter(r => r.storeId === storeId);
-  const stats = getGapStats(storeReviews);
-
+  const [sameTypeOnly, setSameTypeOnly] = useState(false);
+  const store = stores.find(s => s.id === pageParam);
   if (!store) return <div style={{ padding: 80, textAlign: "center", color: "#4a4440" }}>店舗が見つかりません</div>;
+  const storeReviews = reviews.filter(r => r.storeId === pageParam);
+  // フィルター適用（同タイプのみ表示）
+  const displayReviews = sameTypeOnly && currentUser
+    ? storeReviews.filter(r => r.userType === currentUser.userType)
+    : storeReviews;
+  const stats = getGapStats(storeReviews);
+  const matchResult = currentUser ? calcMatchScore(pageParam, currentUser, reviews, stores) : null;
+
+  // ── タイプ別ヒット率 ──
+  // ヒット = Good + high期待で期待通り（high+Expected）
+  // 超越率（Goodのみ）ではなく、推薦できる体験の割合を表示する
+  const typeBreakdown = Object.keys(USER_TYPES).map(type => {
+    const tr = storeReviews.filter(r => r.userType === type);
+    const hits = tr.filter(r => isHit(r)).length;
+    const misses = tr.filter(r => r.result === "Below").length;
+    return {
+      type,
+      count: tr.length,
+      hitRate:  tr.length > 0 ? Math.round(hits   / tr.length * 100) : null,
+      missRate: tr.length > 0 ? Math.round(misses / tr.length * 100) : null,
+    };
+  }).filter(t => t.count > 0);
 
   return (
-    <div className="fade-in" style={{ maxWidth: 800, margin: "0 auto", padding: "40px 24px" }}>
-      {/* Store Header */}
-      <div style={{ marginBottom: 40 }}>
-        <p style={{ fontSize: 11, color: "#4a4440", letterSpacing: "0.15em", marginBottom: 12 }}>
-          {store.area} / {store.category} / {store.priceRange}
-        </p>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 20, marginBottom: 20 }}>
-          <div style={{ fontSize: 56, lineHeight: 1 }}>{store.image}</div>
-          <div>
-            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 36, fontWeight: 400, letterSpacing: "0.04em", marginBottom: 10 }}>{store.name}</h1>
-            <p style={{ fontSize: 14, color: "#7a7268", lineHeight: 1.8, letterSpacing: "0.04em" }}>{store.description}</p>
-          </div>
+    <div className="fade-in" style={{ maxWidth: 800, margin: "0 auto", padding: "40px 16px" }}>
+      <p style={{ fontSize: 11, color: "#4a4440", letterSpacing: "0.15em", marginBottom: 12 }}>{store.area} / {store.category} / {store.priceRange}</p>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
+        <div style={{ fontSize: 50, lineHeight: 1 }}>{store.image}</div>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(24px,5vw,36px)", fontWeight: 400, letterSpacing: "0.04em", marginBottom: 10 }}>{store.name}</h1>
+          <p style={{ fontSize: 13, color: "#7a7268", lineHeight: 1.8, letterSpacing: "0.04em" }}>{store.description}</p>
         </div>
       </div>
 
-      {/* Gap Stats */}
+      <div style={{ marginBottom: 24 }}>
+        {currentUser && matchResult ? (
+          <>
+            <MatchBadge matchResult={matchResult} />
+            <p style={{ fontSize: 11, color: "#4a4440", marginTop: 6 }}>
+              {USER_TYPES[currentUser.userType]?.label} タイプ・{matchResult.sameTypeCount}件のデータを元に算出
+            </p>
+          </>
+        ) : !currentUser ? (
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 10,
+            background: "#1a1814", border: "1px dashed #2a2620", borderRadius: 3, padding: "10px 14px" }}>
+            <div style={{ width: 44, height: 44, borderRadius: "50%", border: "2px dashed #2a2620",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <span style={{ fontSize: 18, color: "#3a3028" }}>?</span>
+            </div>
+            <div>
+              <p style={{ fontSize: 11, color: "#3a3028", letterSpacing: "0.1em", fontWeight: 600 }}>YOUR MATCH</p>
+              <p style={{ fontSize: 11, color: "#2a2620", marginTop: 2 }}>ログイン後に表示されます</p>
+            </div>
+          </div>
+        ) : null}
+        {currentUser && matchResult && (
+          <>
+            {matchResult.isSplit && matchResult.score >= 0 && (
+              <div style={{ marginTop: 10, padding: "10px 14px", background: "#e67e2211", border: "1px solid #e67e2244", borderRadius: 3 }}>
+                <p style={{ fontSize: 12, color: "#e67e22", fontWeight: 600, marginBottom: 4 }}>⚡ この店はあなたのタイプの中で賛否両論です</p>
+                <p style={{ fontSize: 11, color: "#7a7268", lineHeight: 1.7 }}>
+                  同タイプユーザーでも「期待を超えた」と「期待を下回った」に評価が分かれています。
+                  好みやその日のコンディションによって体験が大きく変わる可能性があります。
+                </p>
+              </div>
+            )}
+            {!(matchResult.isSplit && matchResult.score >= 0) && matchResult.score <= -50 && (
+              <div style={{ marginTop: 10, padding: "10px 14px", background: "#c0392b11", border: "1px solid #c0392b44", borderRadius: 3 }}>
+                <p style={{ fontSize: 12, color: "#c0392b", fontWeight: 600, marginBottom: 4 }}>⚠ あなたのタイプには合いにくい店です</p>
+                <p style={{ fontSize: 11, color: "#7a7268", lineHeight: 1.7 }}>
+                  同タイプユーザーの多くが期待を下回る体験をしています。
+                  周囲の評判が高くても、あなたの味覚傾向とは合わない可能性があります。訪問前にレビューを確認することをおすすめします。
+                </p>
+              </div>
+            )}
+            {!(matchResult.isSplit && matchResult.score >= 0) && matchResult.score > -50 && matchResult.score < 0 && (
+              <div style={{ marginTop: 10, padding: "10px 14px", background: "#e74c3c11", border: "1px solid #e74c3c33", borderRadius: 3 }}>
+                <p style={{ fontSize: 12, color: "#e74c3c", fontWeight: 600, marginBottom: 4 }}>📋 やや合いにくい傾向があります</p>
+                <p style={{ fontSize: 11, color: "#7a7268", lineHeight: 1.7 }}>
+                  同タイプユーザーが期待を下回る体験をしているケースが見られます。
+                  レビュー内容を参考に、期待値を調整してから訪問するのがよいかもしれません。
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       {stats && (
-        <div style={{ background: "#111012", border: "1px solid #1e1c1a", borderRadius: 4, padding: "28px 32px", marginBottom: 40 }}>
-          <p style={{ fontSize: 11, letterSpacing: "0.2em", color: "#4a4440", marginBottom: 20, textTransform: "uppercase" }}>期待値ギャップ分布</p>
-          <div style={{ display: "flex", gap: 0 }}>
-            {[
-              { key: "beyond", label: "超越", color: "#1abc9c", count: stats.beyond },
-              { key: "match", label: "一致", color: "#f39c12", count: stats.match },
-              { key: "below", label: "乖離", color: "#e74c3c", count: stats.below },
-            ].map(g => (
-              <div key={g.key} style={{ flex: 1, textAlign: "center", padding: "16px 0", borderRight: "1px solid #1e1c1a" }}>
-                <p style={{ fontSize: 28, fontFamily: "'Cormorant Garamond', serif", color: g.color, marginBottom: 4 }}>{g.count}</p>
-                <p style={{ fontSize: 11, color: g.color, letterSpacing: "0.1em" }}>{g.label}</p>
-                <p style={{ fontSize: 10, color: "#4a4440", marginTop: 4 }}>{stats.total > 0 ? Math.round(g.count / stats.total * 100) : 0}%</p>
+        <div style={{ background: "#111012", border: "1px solid #1e1c1a", borderRadius: 4, padding: "22px 24px", marginBottom: 32 }}>
+          <p style={{ fontSize: 11, letterSpacing: "0.2em", color: "#4a4440", marginBottom: 16, textTransform: "uppercase" }}>期待値ギャップ分布</p>
+          <div style={{ display: "flex" }}>
+            {[["超越","#1abc9c",stats.beyond],["一致","#f39c12",stats.match],["乖離","#e74c3c",stats.below]].map(([label,color,count]) => (
+              <div key={label} style={{ flex: 1, textAlign: "center", padding: "12px 0", borderRight: "1px solid #1e1c1a" }}>
+                <p style={{ fontSize: 24, fontFamily: "'Cormorant Garamond',serif", color, marginBottom: 4 }}>{count}</p>
+                <p style={{ fontSize: 11, color, letterSpacing: "0.1em" }}>{label}</p>
+                <p style={{ fontSize: 10, color: "#4a4440", marginTop: 3 }}>{Math.round(count / stats.total * 100)}%</p>
               </div>
             ))}
           </div>
-          {/* Bar */}
-          <div style={{ marginTop: 20, height: 4, background: "#1e1c1a", borderRadius: 2, overflow: "hidden", display: "flex" }}>
-            {stats.total > 0 && <>
-              <div style={{ width: `${stats.beyond / stats.total * 100}%`, background: "#1abc9c", transition: "width 0.5s" }} />
-              <div style={{ width: `${stats.match / stats.total * 100}%`, background: "#f39c12", transition: "width 0.5s" }} />
-              <div style={{ width: `${stats.below / stats.total * 100}%`, background: "#e74c3c", transition: "width 0.5s" }} />
-            </>}
+          <div style={{ marginTop: 14, height: 4, background: "#1e1c1a", borderRadius: 2, overflow: "hidden", display: "flex" }}>
+            <div style={{ width: `${stats.beyond / stats.total * 100}%`, background: "#1abc9c" }} />
+            <div style={{ width: `${stats.match / stats.total * 100}%`, background: "#f39c12" }} />
+            <div style={{ width: `${stats.below / stats.total * 100}%`, background: "#e74c3c" }} />
           </div>
+
+          {typeBreakdown.length > 0 && (
+            <div style={{ marginTop: 22 }}>
+              <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#4a4440", marginBottom: 4 }}>味覚タイプ別のヒット率</p>
+              <p style={{ fontSize: 10, color: "#3a3028", marginBottom: 12 }}>
+                ヒット = 期待を超えた体験 + 高い期待通りだった体験
+              </p>
+              {typeBreakdown.map(t => {
+                const ut = USER_TYPES[t.type];
+                const isMe = currentUser?.userType === t.type;
+                const hitColor = t.hitRate >= 75 ? "#1abc9c" : t.hitRate >= 50 ? "#f39c12" : "#e74c3c";
+                return (
+                  <div key={t.type} style={{ marginBottom: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                      <span style={{ fontSize: 14, width: 20 }}>{ut.icon}</span>
+                      <span style={{ fontSize: 11, color: isMe ? ut.color : "#5a5450", flex: 1, letterSpacing: "0.03em" }}>
+                        {ut.label}{isMe ? " 👈" : ""}
+                      </span>
+                      <span style={{ fontSize: 11, color: isMe ? hitColor : "#5a5450", fontWeight: isMe ? 600 : 400 }}>
+                        ヒット {t.hitRate}%
+                      </span>
+                      {t.missRate > 0 && (
+                        <span style={{ fontSize: 10, color: "#e74c3c" }}>/ ミス {t.missRate}%</span>
+                      )}
+                      <span style={{ fontSize: 10, color: "#3a3028", width: 24, textAlign: "right" }}>{t.count}件</span>
+                    </div>
+                    {/* ヒット率バー（緑）＋ミス率バー（赤）を重ねて表示 */}
+                    <div style={{ marginLeft: 28, height: 4, background: "#1e1c1a", borderRadius: 2, overflow: "hidden", display: "flex" }}>
+                      <div style={{ width: `${t.hitRate}%`, height: "100%", background: isMe ? hitColor : "#3a3028", transition: "width 0.4s" }} />
+                      <div style={{ width: `${t.missRate}%`, height: "100%", background: "#e74c3c55" }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Review Button */}
-      <div style={{ marginBottom: 40, display: "flex", gap: 12 }}>
-        <button onClick={() => navigate(currentUser ? "review-form" : "login", storeId)} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "12px 28px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>
-          レビューを書く
-        </button>
+      <div style={{ marginBottom: 32 }}>
+        <button onClick={() => navigate(currentUser ? "review-form" : "login", pageParam)} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "12px 28px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>レビューを書く</button>
       </div>
 
-      {/* Reviews */}
-      <div>
-        <SectionLabel>口コミ ({storeReviews.length})</SectionLabel>
-        {storeReviews.length === 0 ? (
-          <p style={{ marginTop: 24, color: "#4a4440", fontSize: 14, letterSpacing: "0.06em" }}>まだレビューがありません</p>
-        ) : (
-          <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 2 }}>
-            {storeReviews.map(r => <ReviewCard key={r.id} review={r} />)}
-          </div>
+      {/* ── 口コミフィルター ── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
+        <SectionLabel>口コミ ({sameTypeOnly && currentUser ? `${displayReviews.length} / ${storeReviews.length}` : storeReviews.length})</SectionLabel>
+        {currentUser && storeReviews.length > 0 && (
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
+            <div
+              onClick={() => setSameTypeOnly(v => !v)}
+              style={{
+                width: 36, height: 20, borderRadius: 10, flexShrink: 0,
+                background: sameTypeOnly ? USER_TYPES[currentUser.userType]?.color : "#2a2620",
+                position: "relative", transition: "background 0.2s",
+                border: `1px solid ${sameTypeOnly ? USER_TYPES[currentUser.userType]?.color : "#3a3028"}`,
+              }}
+            >
+              <div style={{
+                position: "absolute", top: 2, left: sameTypeOnly ? 17 : 2,
+                width: 14, height: 14, borderRadius: "50%", background: "#e8e0d4",
+                transition: "left 0.2s",
+              }} />
+            </div>
+            <span style={{ fontSize: 11, color: sameTypeOnly ? USER_TYPES[currentUser.userType]?.color : "#5a5450", letterSpacing: "0.05em" }}>
+              {USER_TYPES[currentUser.userType]?.icon} 同タイプのみ表示
+            </span>
+          </label>
         )}
       </div>
+
+      {displayReviews.length === 0 ? (
+        <p style={{ marginTop: 16, color: "#4a4440", fontSize: 14 }}>
+          {sameTypeOnly ? "同タイプの口コミはまだありません" : "まだレビューがありません"}
+        </p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {displayReviews.map(r => <ReviewCard key={r.id} review={r} currentUserType={currentUser?.userType} navigate={navigate} />)}
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── Review Form Page ─────────────────────────────────────────────────────────
 function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pageParam, notify }) {
   const [storeId, setStoreId] = useState(pageParam || "");
-  const [storeQ, setStoreQ] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [storeQ, setStoreQ] = useState(pageParam ? (stores.find(s => s.id === pageParam)?.name || "") : "");
+  const [showSug, setShowSug] = useState(false);
   const [preExpect, setPreExpect] = useState("");
   const [result, setResult] = useState("");
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
+  if (!currentUser) { navigate("login"); return null; }
   const selectedStore = stores.find(s => s.id === storeId);
-  const suggestions = storeQ ? stores.filter(s => s.name.includes(storeQ) || s.category.includes(storeQ) || s.area.includes(storeQ)).slice(0, 5) : [];
-
-  if (!currentUser) {
-    navigate("login");
-    return null;
-  }
-
+  const suggestions = storeQ && !selectedStore ? stores.filter(s => s.name.includes(storeQ) || s.category.includes(storeQ) || s.area.includes(storeQ)).slice(0, 5) : [];
   const gap = preExpect && result ? calcGap(preExpect, result) : null;
 
-  const handleSubmit = () => {
-    if (!storeId || !preExpect || !result) {
-      notify("必須項目を入力してください", "error");
-      return;
-    }
-    const newReview = {
-      id: Date.now(),
-      storeId,
-      userId: currentUser.id,
-      userName: currentUser.name,
-      preExpect,
+  const handleSubmit = async () => {
+    if (!storeId || !preExpect || !result) { notify("必須項目を入力してください", "error"); return; }
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await supabase.from("reviews").insert({
+      store_id: storeId,
+      user_id: currentUser.id,
+      user_name: currentUser.name,
+      user_type: currentUser.userType || currentUser.user_type,
+      pre_expect: preExpect,
       result,
       comment,
-      date: new Date().toISOString().slice(0, 10),
-      userType: currentUser.userType,
-    };
-    setReviews(prev => [newReview, ...prev]);
+      date: today,
+    }).select().single();
+    if (error) { notify("投稿に失敗しました", "error"); return; }
+    setReviews(prev => [{
+      id: data.id, storeId: data.store_id, userId: data.user_id,
+      userName: data.user_name, userType: data.user_type,
+      preExpect: data.pre_expect, result: data.result,
+      comment: data.comment, date: data.date,
+    }, ...prev]);
     setSubmitted(true);
     notify("レビューを投稿しました");
   };
 
-  if (submitted) {
-    return (
-      <div className="fade-in" style={{ maxWidth: 500, margin: "120px auto", padding: "0 24px", textAlign: "center" }}>
-        <p style={{ fontSize: 48, marginBottom: 24 }}>✓</p>
-        <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 300, marginBottom: 16 }}>レビューを投稿しました</h2>
-        {gap && (
-          <p style={{ fontSize: 18, color: gap.color, letterSpacing: "0.1em", marginBottom: 32 }}>
-            {gap.emoji} 期待値ギャップ：{gap.label}
-          </p>
-        )}
-        <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-          <button onClick={() => navigate("store", storeId)} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "12px 28px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>
-            店舗ページへ
-          </button>
-          <button onClick={() => { setSubmitted(false); setStoreId(""); setStoreQ(""); setPreExpect(""); setResult(""); setComment(""); }} style={{ background: "none", border: "1px solid #3a3028", color: "#e8e0d4", padding: "12px 28px", fontSize: 13, letterSpacing: "0.12em" }}>
-            続けて投稿
-          </button>
-        </div>
+  if (submitted) return (
+    <div className="fade-in" style={{ maxWidth: 500, margin: "100px auto", padding: "0 20px", textAlign: "center" }}>
+      <p style={{ fontSize: 44, marginBottom: 22 }}>✓</p>
+      <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 300, marginBottom: 14 }}>レビューを投稿しました</h2>
+      {gap && <p style={{ fontSize: 18, color: gap.color, letterSpacing: "0.1em", marginBottom: 28 }}>{gap.emoji} {gap.label}</p>}
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+        <button onClick={() => navigate("store", storeId)} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "12px 26px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>店舗ページへ</button>
+        <button onClick={() => { setSubmitted(false); setStoreId(""); setStoreQ(""); setPreExpect(""); setResult(""); setComment(""); }} style={{ background: "none", border: "1px solid #3a3028", color: "#e8e0d4", padding: "12px 26px", fontSize: 13 }}>続けて投稿</button>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="fade-in" style={{ maxWidth: 560, margin: "0 auto", padding: "48px 24px" }}>
+    <div className="fade-in" style={{ maxWidth: 540, margin: "0 auto", padding: "44px 16px" }}>
       <SectionLabel>レビューを投稿</SectionLabel>
-      <p style={{ marginTop: 8, fontSize: 13, color: "#5a5450", letterSpacing: "0.04em" }}>訪問後の体験をギャップとして記録します</p>
+      <div style={{ marginTop: 36, display: "flex", flexDirection: "column", gap: 28 }}>
 
-      <div style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: 32 }}>
-
-        {/* Store Select */}
         <FormSection label="店舗" required>
           {selectedStore ? (
             <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#1a1814", border: "1px solid #c9a96e", borderRadius: 3, padding: "12px 16px" }}>
-              <span style={{ fontSize: 24 }}>{selectedStore.image}</span>
-              <div>
-                <p style={{ fontSize: 14, letterSpacing: "0.04em" }}>{selectedStore.name}</p>
+              <span style={{ fontSize: 22 }}>{selectedStore.image}</span>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 14 }}>{selectedStore.name}</p>
                 <p style={{ fontSize: 12, color: "#5a5450" }}>{selectedStore.area} / {selectedStore.category}</p>
               </div>
-              <button onClick={() => { setStoreId(""); setStoreQ(""); }} style={{ marginLeft: "auto", background: "none", border: "none", color: "#5a5450", fontSize: 18 }}>×</button>
+              <button onClick={() => { setStoreId(""); setStoreQ(""); }} style={{ background: "none", border: "none", color: "#5a5450", fontSize: 20, padding: "4px 8px" }}>×</button>
             </div>
           ) : (
             <div style={{ position: "relative" }}>
-              <input
-                value={storeQ}
-                onChange={e => { setStoreQ(e.target.value); setShowSuggestions(true); }}
-                onFocus={() => setShowSuggestions(true)}
-                placeholder="店名・エリア・カテゴリで検索..."
-                style={{ width: "100%", background: "#1a1814", border: "1px solid #2a2620", borderRadius: 3, padding: "12px 16px", color: "#e8e0d4", fontSize: 14, outline: "none" }}
-              />
-              {showSuggestions && suggestions.length > 0 && (
+              <input value={storeQ} onChange={e => { setStoreQ(e.target.value); setShowSug(true); }} onFocus={() => setShowSug(true)} placeholder="店名・エリア・カテゴリで検索..." style={{ width: "100%", background: "#1a1814", border: "1px solid #2a2620", borderRadius: 3, padding: "12px 16px", color: "#e8e0d4", outline: "none" }} />
+              {showSug && suggestions.length > 0 && (
                 <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#1a1814", border: "1px solid #2a2620", borderTop: "none", zIndex: 10 }}>
                   {suggestions.map(s => (
-                    <button key={s.id} onClick={() => { setStoreId(s.id); setStoreQ(s.name); setShowSuggestions(false); }} style={{ width: "100%", background: "none", border: "none", padding: "10px 16px", color: "#e8e0d4", textAlign: "left", fontSize: 13, display: "flex", gap: 10, alignItems: "center", borderBottom: "1px solid #1e1c1a" }}>
-                      <span>{s.image}</span>
-                      <span>{s.name}</span>
-                      <span style={{ color: "#5a5450", marginLeft: "auto", fontSize: 11 }}>{s.area}</span>
+                    <button key={s.id} onClick={() => { setStoreId(s.id); setStoreQ(s.name); setShowSug(false); }} style={{ width: "100%", background: "none", border: "none", padding: "12px 16px", color: "#e8e0d4", textAlign: "left", display: "flex", gap: 10, alignItems: "center", borderBottom: "1px solid #1e1c1a" }}>
+                      <span>{s.image}</span><span style={{ fontSize: 14 }}>{s.name}</span><span style={{ color: "#5a5450", marginLeft: "auto", fontSize: 11 }}>{s.area}</span>
                     </button>
                   ))}
                 </div>
@@ -471,289 +1234,395 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
           )}
         </FormSection>
 
-        {/* Pre Expectation */}
         <FormSection label="訪問前の期待値" required>
           <div style={{ display: "flex", gap: 8 }}>
-            {[["low", "低い", "落ち着いて訪問"], ["normal", "普通", "標準的な期待"], ["high", "高い", "かなり期待して訪問"]].map(([v, l, d]) => (
-              <button key={v} onClick={() => setPreExpect(v)} style={{ flex: 1, background: preExpect === v ? "#c9a96e" : "#1a1814", border: `1px solid ${preExpect === v ? "#c9a96e" : "#2a2620"}`, color: preExpect === v ? "#0c0c0e" : "#9a9090", padding: "12px 8px", borderRadius: 3, fontSize: 13, fontWeight: preExpect === v ? 600 : 400, transition: "all 0.2s" }}>
-                <p>{l}</p>
-                <p style={{ fontSize: 10, marginTop: 4, opacity: 0.7 }}>{d}</p>
-              </button>
+            {[["low","低い"],["normal","普通"],["high","高い"]].map(([v,l]) => (
+              <button key={v} onClick={() => setPreExpect(v)} style={{ flex: 1, background: preExpect === v ? "#c9a96e" : "#1a1814", border: `1px solid ${preExpect === v ? "#c9a96e" : "#2a2620"}`, color: preExpect === v ? "#0c0c0e" : "#9a9090", padding: "14px 8px", borderRadius: 3, fontSize: 14, fontWeight: preExpect === v ? 600 : 400, transition: "all 0.2s" }}>{l}</button>
             ))}
           </div>
         </FormSection>
 
-        {/* Result */}
         <FormSection label="実際の食体験" required>
           <div style={{ display: "flex", gap: 8 }}>
-            {[["Good", "🚀", "期待以上", "#1abc9c"], ["Expected", "✓", "期待通り", "#f39c12"], ["Below", "↓", "期待以下", "#e74c3c"]].map(([v, icon, l, c]) => (
-              <button key={v} onClick={() => setResult(v)} style={{ flex: 1, background: result === v ? c + "22" : "#1a1814", border: `1px solid ${result === v ? c : "#2a2620"}`, color: result === v ? c : "#9a9090", padding: "16px 8px", borderRadius: 3, fontSize: 13, transition: "all 0.2s" }}>
-                <p style={{ fontSize: 22, marginBottom: 6 }}>{icon}</p>
-                <p style={{ fontWeight: result === v ? 600 : 400 }}>{v}</p>
-                <p style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>{l}</p>
+            {[["Good","🚀","期待以上","#1abc9c"],["Expected","✓","期待通り","#f39c12"],["Below","↓","期待以下","#e74c3c"]].map(([v,icon,l,c]) => (
+              <button key={v} onClick={() => setResult(v)} style={{ flex: 1, background: result === v ? c + "22" : "#1a1814", border: `1px solid ${result === v ? c : "#2a2620"}`, color: result === v ? c : "#9a9090", padding: "14px 8px", borderRadius: 3, transition: "all 0.2s" }}>
+                <p style={{ fontSize: 20, marginBottom: 5 }}>{icon}</p>
+                <p style={{ fontSize: 13, fontWeight: result === v ? 600 : 400 }}>{v}</p>
+                <p style={{ fontSize: 10, opacity: 0.7, marginTop: 2 }}>{l}</p>
               </button>
             ))}
           </div>
         </FormSection>
 
-        {/* Gap Preview */}
         {gap && (
-          <div style={{ background: gap.color + "11", border: `1px solid ${gap.color}44`, borderRadius: 4, padding: "16px 24px", textAlign: "center", animation: "fadeIn 0.3s ease" }}>
-            <p style={{ fontSize: 12, color: gap.color, letterSpacing: "0.15em", marginBottom: 4, textTransform: "uppercase" }}>期待値ギャップ</p>
-            <p style={{ fontSize: 28, color: gap.color, fontFamily: "'Cormorant Garamond', serif" }}>{gap.emoji} {gap.label}</p>
+          <div style={{ background: gap.color + "11", border: `1px solid ${gap.color}44`, borderRadius: 4, padding: "14px 22px", textAlign: "center" }}>
+            <p style={{ fontSize: 11, color: gap.color, letterSpacing: "0.15em", marginBottom: 4, textTransform: "uppercase" }}>期待値ギャップ</p>
+            <p style={{ fontSize: 26, color: gap.color, fontFamily: "'Cormorant Garamond',serif" }}>{gap.emoji} {gap.label}</p>
           </div>
         )}
 
-        {/* Comment */}
         <FormSection label="コメント（任意）">
-          <textarea
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            placeholder="体験についての自由なコメント..."
-            rows={4}
-            style={{ width: "100%", background: "#1a1814", border: "1px solid #2a2620", borderRadius: 3, padding: "12px 16px", color: "#e8e0d4", fontSize: 13, resize: "vertical", outline: "none", lineHeight: 1.7, letterSpacing: "0.04em" }}
-          />
+          <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="体験についての自由なコメント..." rows={4} style={{ width: "100%", background: "#1a1814", border: "1px solid #2a2620", borderRadius: 3, padding: "12px 16px", color: "#e8e0d4", resize: "vertical", outline: "none", lineHeight: 1.7 }} />
         </FormSection>
 
-        <button onClick={handleSubmit} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "16px", fontSize: 13, letterSpacing: "0.15em", fontWeight: 600, borderRadius: 2 }}>
-          投稿する
-        </button>
+        <button onClick={handleSubmit} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "16px", fontSize: 14, letterSpacing: "0.15em", fontWeight: 600, borderRadius: 2 }}>投稿する</button>
       </div>
     </div>
   );
 }
 
-// ─── Login Page ───────────────────────────────────────────────────────────────
-function LoginPage({ navigate, users, setCurrentUser, notify }) {
+function LoginPage({ navigate, setCurrentUser, notify }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    const user = users.find(u => u.email === email && u.password === password);
-    if (user) {
-      setCurrentUser(user);
-      notify(`ようこそ、${user.name}さん`);
-      navigate("home");
-    } else {
-      notify("メールアドレスまたはパスワードが間違っています", "error");
-    }
+  const handleLogin = async () => {
+    if (!email || !password) { notify("メールアドレスとパスワードを入力してください", "error"); return; }
+    setIsLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) { notify("メールアドレスまたはパスワードが間違っています", "error"); setIsLoading(false); return; }
+    const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
+    if (profile) { setCurrentUser({ ...profile, email: data.user.email, userType: profile.user_type, isAdmin: profile.is_admin }); notify(`ようこそ、${profile.name}さん`); navigate("home"); }
+    setIsLoading(false);
   };
 
   return (
-    <div className="fade-in" style={{ maxWidth: 400, margin: "80px auto", padding: "0 24px" }}>
+    <div className="fade-in" style={{ maxWidth: 400, margin: "60px auto", padding: "0 20px" }}>
       <SectionLabel>ログイン</SectionLabel>
-      <div style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ marginTop: 36, display: "flex", flexDirection: "column", gap: 20 }}>
         <FormSection label="メールアドレス">
-          <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="example@email.com" style={inputStyle} />
+          <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="example@email.com" style={inputStyle} autoComplete="email" />
         </FormSection>
         <FormSection label="パスワード">
-          <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="••••••••" style={inputStyle} />
+          <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="パスワード" style={inputStyle} autoComplete="current-password" />
         </FormSection>
-        <button onClick={handleLogin} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "14px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>
-          ログイン
+        <button onClick={handleLogin} disabled={isLoading} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "16px", fontSize: 14, letterSpacing: "0.12em", fontWeight: 600, borderRadius: 2, opacity: isLoading ? 0.7 : 1 }}>
+          {isLoading ? "ログイン中..." : "ログイン"}
         </button>
-        <p style={{ textAlign: "center", fontSize: 12, color: "#5a5450", letterSpacing: "0.06em" }}>
+        <p style={{ textAlign: "center", fontSize: 13, color: "#5a5450" }}>
           アカウントをお持ちでない方は{" "}
-          <button onClick={() => navigate("register")} style={{ background: "none", border: "none", color: "#c9a96e", fontSize: 12, letterSpacing: "0.06em", textDecoration: "underline" }}>
-            新規登録
-          </button>
+          <button onClick={() => navigate("register")} style={{ background: "none", border: "none", color: "#c9a96e", fontSize: 13, textDecoration: "underline" }}>新規登録</button>
         </p>
-        <div style={{ marginTop: 8, padding: "12px 16px", background: "#111012", border: "1px solid #1e1c1a", borderRadius: 3 }}>
-          <p style={{ fontSize: 11, color: "#4a4440", letterSpacing: "0.06em", marginBottom: 6 }}>デモアカウント</p>
-          <p style={{ fontSize: 12, color: "#6a6258" }}>管理者: admin@example.com / admin</p>
-          <p style={{ fontSize: 12, color: "#6a6258" }}>一般: kaito@example.com / pass</p>
-        </div>
       </div>
     </div>
   );
 }
 
-// ─── Register Page ────────────────────────────────────────────────────────────
-function RegisterPage({ navigate, users, setUsers, setCurrentUser, notify }) {
+function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notify }) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [axis1, setAxis1] = useState("");
   const [axis2, setAxis2] = useState("");
+  const [registeredUser, setRegisteredUser] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const userType = axis1 && axis2 ? axis1 + axis2 : null;
+  const ut = userType ? USER_TYPES[userType] : null;
 
-  const handleRegister = () => {
-    if (!name || !email || !password || !userType) {
-      notify("全ての項目を入力してください", "error");
-      return;
-    }
-    const newUser = { id: "u" + Date.now(), name, email, password, isAdmin: false, userType };
-    setUsers(prev => [...prev, newUser]);
+  const handleRegister = async () => {
+    if (!name || !email || !password || !userType) { notify("全ての項目を入力してください", "error"); return; }
+    setIsSubmitting(true);
+    // Supabase Auth でユーザー作成
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) { notify(error.message, "error"); setIsSubmitting(false); return; }
+    // profiles テーブルに追加情報を保存
+    const { error: profileError } = await supabase.from("profiles").insert({
+      id: data.user.id, name, user_type: userType, is_admin: false,
+    });
+    if (profileError) { notify("登録に失敗しました", "error"); setIsSubmitting(false); return; }
+    const newUser = { id: data.user.id, name, user_type: userType, userType, is_admin: false, isAdmin: false, email };
     setCurrentUser(newUser);
-    notify(`ようこそ、${name}さん！`);
-    navigate("home");
+    setUsers(prev => [...prev, newUser]);
+    setRegisteredUser(newUser);
+    setStep(3);
+    setIsSubmitting(false);
   };
 
-  return (
-    <div className="fade-in" style={{ maxWidth: 500, margin: "60px auto", padding: "0 24px" }}>
-      <SectionLabel>新規登録</SectionLabel>
+  const suggestedCategories = [...new Set(stores.map(s => s.category))].slice(0, 4);
 
+  return (
+    <div className="fade-in" style={{ maxWidth: 500, margin: "40px auto", padding: "0 20px" }}>
+
+      {step < 3 && (
+        <>
+          <SectionLabel>新規登録</SectionLabel>
+          <div style={{ display: "flex", gap: 4, marginTop: 18, marginBottom: 28 }}>
+            {[1, 2].map(n => (
+              <div key={n} style={{ flex: 1, height: 2, background: step >= n ? "#c9a96e" : "#1e1c1a", transition: "background 0.3s" }} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Step 1: 基本情報 */}
       {step === 1 && (
-        <div style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <FormSection label="お名前">
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="田中 太郎" style={inputStyle} />
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="田中 太郎" style={inputStyle} autoComplete="name" />
           </FormSection>
           <FormSection label="メールアドレス">
-            <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="example@email.com" style={inputStyle} />
+            <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="example@email.com" style={inputStyle} autoComplete="email" />
           </FormSection>
           <FormSection label="パスワード">
-            <input value={password} onChange={e => setPassword(e.target.value)} type="password" style={inputStyle} />
+            <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="パスワード" style={inputStyle} autoComplete="new-password" />
           </FormSection>
-          <button onClick={() => { if (name && email && password) setStep(2); else notify("入力してください", "error"); }} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "14px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>
+          <button
+            onClick={() => { if (name && email && password) setStep(2); else notify("入力してください", "error"); }}
+            style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "16px", fontSize: 14, letterSpacing: "0.12em", fontWeight: 600, borderRadius: 2 }}
+          >
             次へ：味覚プロファイル →
           </button>
         </div>
       )}
 
+      {/* Step 2: 味覚タイプ */}
       {step === 2 && (
-        <div style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: 32 }}>
-          <p style={{ fontSize: 13, color: "#7a7268", lineHeight: 1.8, letterSpacing: "0.04em" }}>
-            あなたの味覚傾向を教えてください。これがパーソナライズされたレコメンドの基礎になります。
-          </p>
-
+        <div style={{ display: "flex", flexDirection: "column", gap: 26 }}>
+          <p style={{ fontSize: 13, color: "#7a7268", lineHeight: 1.8 }}>あなたの味覚傾向を教えてください。パーソナライズされたレコメンドの基礎になります。</p>
           <FormSection label="軸① 味の方向性">
             <div style={{ display: "flex", gap: 8 }}>
               {[["B", "Bold（濃い味）", "🔥"], ["D", "Delicate（繊細）", "🌿"]].map(([v, l, icon]) => (
-                <button key={v} onClick={() => setAxis1(v)} style={{ flex: 1, background: axis1 === v ? "#c9a96e22" : "#1a1814", border: `1px solid ${axis1 === v ? "#c9a96e" : "#2a2620"}`, color: axis1 === v ? "#c9a96e" : "#9a9090", padding: "20px 12px", borderRadius: 3, fontSize: 13, transition: "all 0.2s" }}>
-                  <p style={{ fontSize: 28, marginBottom: 8 }}>{icon}</p>
-                  <p style={{ fontWeight: axis1 === v ? 600 : 400 }}>{l}</p>
+                <button key={v} onClick={() => setAxis1(v)} style={{ flex: 1, background: axis1 === v ? "#c9a96e22" : "#1a1814", border: `1px solid ${axis1 === v ? "#c9a96e" : "#2a2620"}`, color: axis1 === v ? "#c9a96e" : "#9a9090", padding: "18px 12px", borderRadius: 3, transition: "all 0.2s" }}>
+                  <p style={{ fontSize: 26, marginBottom: 7 }}>{icon}</p>
+                  <p style={{ fontSize: 13, fontWeight: axis1 === v ? 600 : 400 }}>{l}</p>
                 </button>
               ))}
             </div>
           </FormSection>
-
           <FormSection label="軸② 体験志向">
             <div style={{ display: "flex", gap: 8 }}>
               {[["I", "素材重視", "🥩"], ["C", "設計・バランス重視", "⚖️"]].map(([v, l, icon]) => (
-                <button key={v} onClick={() => setAxis2(v)} style={{ flex: 1, background: axis2 === v ? "#c9a96e22" : "#1a1814", border: `1px solid ${axis2 === v ? "#c9a96e" : "#2a2620"}`, color: axis2 === v ? "#c9a96e" : "#9a9090", padding: "20px 12px", borderRadius: 3, fontSize: 13, transition: "all 0.2s" }}>
-                  <p style={{ fontSize: 28, marginBottom: 8 }}>{icon}</p>
-                  <p style={{ fontWeight: axis2 === v ? 600 : 400 }}>{l}</p>
+                <button key={v} onClick={() => setAxis2(v)} style={{ flex: 1, background: axis2 === v ? "#c9a96e22" : "#1a1814", border: `1px solid ${axis2 === v ? "#c9a96e" : "#2a2620"}`, color: axis2 === v ? "#c9a96e" : "#9a9090", padding: "18px 12px", borderRadius: 3, transition: "all 0.2s" }}>
+                  <p style={{ fontSize: 26, marginBottom: 7 }}>{icon}</p>
+                  <p style={{ fontSize: 13, fontWeight: axis2 === v ? 600 : 400 }}>{l}</p>
                 </button>
               ))}
             </div>
           </FormSection>
-
           {userType && (
-            <div style={{ background: "#1a1814", border: `1px solid ${USER_TYPES[userType]?.color}44`, borderRadius: 4, padding: "16px 24px", textAlign: "center" }}>
-              <p style={{ fontSize: 11, color: "#5a5450", letterSpacing: "0.15em", marginBottom: 8 }}>あなたのタイプ</p>
-              <p style={{ fontSize: 24, marginBottom: 6 }}>{USER_TYPES[userType]?.icon}</p>
-              <p style={{ fontSize: 16, color: USER_TYPES[userType]?.color, fontWeight: 600, letterSpacing: "0.06em" }}>{USER_TYPES[userType]?.label}</p>
-              <p style={{ fontSize: 12, color: "#7a7268", marginTop: 4 }}>{USER_TYPES[userType]?.desc}</p>
+            <div style={{ background: "#1a1814", border: `1px solid ${ut?.color}44`, borderRadius: 4, padding: "16px 22px", textAlign: "center" }}>
+              <p style={{ fontSize: 11, color: "#5a5450", marginBottom: 7 }}>あなたのタイプ</p>
+              <p style={{ fontSize: 22, marginBottom: 5 }}>{ut?.icon}</p>
+              <p style={{ fontSize: 15, color: ut?.color, fontWeight: 600, letterSpacing: "0.06em" }}>{ut?.label}</p>
+              <p style={{ fontSize: 12, color: "#7a7268", marginTop: 4 }}>{ut?.desc}</p>
             </div>
           )}
-
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => setStep(1)} style={{ flex: 1, background: "none", border: "1px solid #2a2620", color: "#9a9090", padding: "14px", fontSize: 13, letterSpacing: "0.1em" }}>
-              ← 戻る
-            </button>
-            <button onClick={handleRegister} style={{ flex: 2, background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "14px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>
-              登録する
-            </button>
+            <button onClick={() => setStep(1)} style={{ flex: 1, background: "none", border: "1px solid #2a2620", color: "#9a9090", padding: "14px", fontSize: 14 }}>← 戻る</button>
+            <button onClick={handleRegister} disabled={isSubmitting} style={{ flex: 2, background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "14px", fontSize: 14, letterSpacing: "0.12em", fontWeight: 600, borderRadius: 2, opacity: isSubmitting ? 0.7 : 1 }}>{isSubmitting ? "登録中..." : "登録する"}</button>
           </div>
         </div>
       )}
+
+      {/* Step 3: 登録完了 → レビューCTA */}
+      {step === 3 && registeredUser && (() => {
+        const rut = USER_TYPES[registeredUser.userType];
+        return (
+          <div style={{ textAlign: "center", paddingTop: 20 }}>
+
+            {/* 完了ヘッダー */}
+            <div style={{ marginBottom: 36 }}>
+              <div style={{ width: 72, height: 72, background: rut?.color + "22", border: `2px solid ${rut?.color}55`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 16px" }}>
+                {rut?.icon}
+              </div>
+              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 300, marginBottom: 8, letterSpacing: "0.04em" }}>
+                ようこそ、{registeredUser.name}さん
+              </h2>
+              <p style={{ fontSize: 12, color: rut?.color, letterSpacing: "0.12em", marginBottom: 4 }}>{rut?.label}</p>
+              <p style={{ fontSize: 13, color: "#5a5450", lineHeight: 1.9 }}>
+                味覚プロファイルを登録しました。<br />
+                最初の1件のレビューで、<br />
+                あなた専用のマッチ率が動き始めます。
+              </p>
+            </div>
+
+            {/* メインCTAカード */}
+            <div style={{ background: "#111012", border: "1px solid #c9a96e33", borderRadius: 6, padding: "28px 24px", marginBottom: 12 }}>
+              <p style={{ fontSize: 11, color: "#c9a96e", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 12 }}>
+                First Review
+              </p>
+              <p style={{ fontSize: 14, color: "#9a9090", lineHeight: 1.9, marginBottom: 24 }}>
+                最近訪れたお店はありますか？<br />
+                体験を記録して、あなたの味覚データを育てましょう。
+              </p>
+              <button
+                onClick={() => navigate("review-form")}
+                style={{ width: "100%", background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "16px", fontSize: 14, letterSpacing: "0.15em", fontWeight: 600, borderRadius: 2, marginBottom: 20 }}
+              >
+                最初のレビューを書く →
+              </button>
+
+              {/* ジャンル別ショートカット */}
+              <div>
+                <p style={{ fontSize: 11, color: "#4a4440", letterSpacing: "0.1em", marginBottom: 10 }}>ジャンルから探す</p>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+                  {suggestedCategories.map(cat => {
+                    const catStore = stores.find(s => s.category === cat);
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => navigate("review-form")}
+                        style={{ background: "#1a1814", border: "1px solid #2a2620", color: "#9a9090", padding: "6px 14px", fontSize: 12, borderRadius: 20, letterSpacing: "0.06em" }}
+                      >
+                        {catStore?.image} {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* スキップ */}
+            <button
+              onClick={() => navigate("home")}
+              style={{ background: "none", border: "none", color: "#4a4440", fontSize: 12, letterSpacing: "0.08em", textDecoration: "underline" }}
+            >
+              あとでレビューする
+            </button>
+          </div>
+        );
+      })()}
     </div>
   );
 }
 
-// ─── Profile Page ─────────────────────────────────────────────────────────────
-function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, stores, notify }) {
-  if (!currentUser) { navigate("login"); return null; }
 
+function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, stores, notify, follows, users }) {
+  if (!currentUser) { navigate("login"); return null; }
   const myReviews = reviews.filter(r => r.userId === currentUser.id);
   const ut = USER_TYPES[currentUser.userType];
-
-  const logout = () => {
-    setCurrentUser(null);
-    notify("ログアウトしました");
-    navigate("home");
-  };
-
-  // Recommend: stores where similar-type users said "Good" beyond expectation
-  const recommended = stores.filter(s => {
-    const sReviews = reviews.filter(r => r.storeId === s.id && r.userType === currentUser.userType);
-    return sReviews.some(r => calcGap(r.preExpect, r.result).value >= 1);
-  }).slice(0, 3);
+  const visitedIds = new Set(myReviews.map(r => r.storeId));
+  const recommended = stores
+    .filter(s => !visitedIds.has(s.id))
+    .map(s => ({ ...s, matchResult: calcMatchScore(s.id, currentUser, reviews, stores) }))
+    .filter(s => s.matchResult !== null && s.matchResult.score >= 60 && s.matchResult.score >= 0)
+    .sort((a, b) => b.matchResult.score - a.matchResult.score)
+    .slice(0, 4);
 
   return (
-    <div className="fade-in" style={{ maxWidth: 700, margin: "0 auto", padding: "40px 24px" }}>
-      {/* Profile Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 24, marginBottom: 48 }}>
-        <div style={{ width: 64, height: 64, background: ut?.color + "22", border: `1px solid ${ut?.color}44`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>
-          {ut?.icon}
-        </div>
+    <div className="fade-in" style={{ maxWidth: 700, margin: "0 auto", padding: "40px 16px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 18, marginBottom: 36, flexWrap: "wrap" }}>
+        <div style={{ width: 58, height: 58, background: ut?.color + "22", border: `1px solid ${ut?.color}44`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{ut?.icon}</div>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 400, marginBottom: 6, letterSpacing: "0.04em" }}>{currentUser.name}</h1>
-          <p style={{ fontSize: 12, color: ut?.color, letterSpacing: "0.1em", marginBottom: 4 }}>{ut?.label}</p>
+          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 400, marginBottom: 5, letterSpacing: "0.04em" }}>{currentUser.name}</h1>
+          <p style={{ fontSize: 12, color: ut?.color, letterSpacing: "0.1em", marginBottom: 3 }}>{ut?.label}</p>
           <p style={{ fontSize: 12, color: "#5a5450" }}>{ut?.desc}</p>
         </div>
-        <button onClick={logout} style={{ background: "none", border: "1px solid #2a2620", color: "#5a5450", padding: "8px 16px", fontSize: 12, letterSpacing: "0.08em", borderRadius: 2 }}>
-          ログアウト
-        </button>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, marginBottom: 48 }}>
-        {[
-          { label: "投稿数", value: myReviews.length },
-          { label: "超越体験", value: myReviews.filter(r => calcGap(r.preExpect, r.result).value >= 1).length },
-          { label: "乖離体験", value: myReviews.filter(r => calcGap(r.preExpect, r.result).value < 0).length },
-        ].map(s => (
-          <div key={s.label} style={{ background: "#111012", padding: "24px", textAlign: "center", border: "1px solid #1e1c1a" }}>
-            <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 36, color: "#c9a96e", marginBottom: 4 }}>{s.value}</p>
-            <p style={{ fontSize: 11, color: "#5a5450", letterSpacing: "0.1em" }}>{s.label}</p>
+      {/* フォロー・フォロワー数 */}
+      {(() => {
+        const myFollowing = (follows[currentUser.id] || []).length;
+        const myFollowers = Object.entries(follows).filter(([, ids]) => ids.includes(currentUser.id)).length;
+        return (
+          <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
+            <button onClick={() => {}} style={{ background: "none", border: "none", padding: 0, color: "#e8e0d4", textAlign: "left" }}>
+              <span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{myFollowing}</span>
+              <span style={{ fontSize: 11, color: "#5a5450", marginLeft: 5 }}>フォロー中</span>
+            </button>
+            <button onClick={() => {}} style={{ background: "none", border: "none", padding: 0, color: "#e8e0d4", textAlign: "left" }}>
+              <span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{myFollowers}</span>
+              <span style={{ fontSize: 11, color: "#5a5450", marginLeft: 5 }}>フォロワー</span>
+            </button>
+          </div>
+        );
+      })()}
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, marginBottom: 32 }}>
+        {[["投稿数", myReviews.length], ["ヒット体験", myReviews.filter(r => isHit(r)).length], ["乖離体験", myReviews.filter(r => r.result === "Below").length]].map(([l, v]) => (
+          <div key={l} style={{ background: "#111012", padding: "18px", textAlign: "center", border: "1px solid #1e1c1a" }}>
+            <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, color: "#c9a96e", marginBottom: 4 }}>{v}</p>
+            <p style={{ fontSize: 11, color: "#5a5450", letterSpacing: "0.1em" }}>{l}</p>
           </div>
         ))}
       </div>
 
-      {/* Recommendations */}
+      {/* ── ジャンル別マッチ傾向（Level1の核心） ── */}
+      {(() => {
+        const genreMap = calcGenreAffinityMap(currentUser, reviews, stores);
+        if (!genreMap.length) return null;
+        return (
+          <div style={{ marginBottom: 36, background: "#111012", border: "1px solid #1e1c1a", borderRadius: 4, padding: "20px 24px" }}>
+            <p style={{ fontSize: 11, letterSpacing: "0.2em", color: "#4a4440", marginBottom: 16, textTransform: "uppercase" }}>ジャンル別マッチ傾向</p>
+            <p style={{ fontSize: 11, color: "#4a4440", marginBottom: 16, letterSpacing: "0.04em" }}>
+              あなたの味覚タイプが各ジャンルでどの程度合いやすいかのスコアです
+            </p>
+            {genreMap.map(g => {
+              const color = g.avgScore >= 75 ? "#1abc9c" : g.avgScore >= 50 ? "#f39c12" : "#e74c3c";
+              return (
+                <div key={g.genre} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <span style={{ fontSize: 12, color: "#7a7268", width: 72, flexShrink: 0 }}>{g.genre}</span>
+                  <div style={{ flex: 1, height: 5, background: "#1e1c1a", borderRadius: 3, overflow: "hidden" }}>
+                    <div style={{ width: `${g.avgScore}%`, height: "100%", background: color, borderRadius: 3, transition: "width 0.6s ease" }} />
+                  </div>
+                  <span style={{ fontSize: 12, color, width: 30, textAlign: "right", fontWeight: 600 }}>{g.avgScore}</span>
+                  <span style={{ fontSize: 10, color: "#3a3028", width: 28 }}>{g.storeCount}店</span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* ── フォロー中の新着口コミ ── */}
+      {(() => {
+        const followingIds = follows[currentUser.id] || [];
+        if (!followingIds.length) return null;
+        const feedReviews = reviews
+          .filter(r => followingIds.includes(r.userId))
+          .sort((a, b) => b.date.localeCompare(a.date))
+          .slice(0, 5);
+        if (!feedReviews.length) return null;
+        return (
+          <div style={{ marginBottom: 36 }}>
+            <SectionLabel>フォロー中の新着</SectionLabel>
+            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 2 }}>
+              {feedReviews.map(r => {
+                const store = stores.find(s => s.id === r.storeId);
+                return (
+                  <div key={r.id} onClick={() => navigate("store", r.storeId)} style={{ cursor: "pointer" }}>
+                    <ReviewCard review={r} storeName={store?.name} showStore currentUserType={currentUser.userType} navigate={navigate} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {recommended.length > 0 && (
-        <div style={{ marginBottom: 48 }}>
+        <div style={{ marginBottom: 40 }}>
           <SectionLabel>あなたへのレコメンド</SectionLabel>
-          <p style={{ fontSize: 12, color: "#5a5450", marginTop: 6, marginBottom: 20, letterSpacing: "0.06em" }}>
-            同じ味覚タイプ（{ut?.label}）のユーザーが「超越」と評価した店舗
-          </p>
+          <p style={{ fontSize: 12, color: "#5a5450", marginTop: 6, marginBottom: 16 }}>{ut?.label} タイプのマッチ率60%以上・未訪問</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {recommended.map(s => (
-              <button key={s.id} onClick={() => navigate("store", s.id)} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "16px 20px", display: "flex", alignItems: "center", gap: 16, textAlign: "left", color: "#e8e0d4" }}>
-                <span style={{ fontSize: 28 }}>{s.image}</span>
-                <div>
+              <button key={s.id} onClick={() => navigate("store", s.id)} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", color: "#e8e0d4", width: "100%" }}>
+                <span style={{ fontSize: 24 }}>{s.image}</span>
+                <div style={{ flex: 1 }}>
                   <p style={{ fontSize: 14, letterSpacing: "0.04em", marginBottom: 2 }}>{s.name}</p>
                   <p style={{ fontSize: 12, color: "#5a5450" }}>{s.area} / {s.category}</p>
                 </div>
-                <span style={{ marginLeft: "auto", color: "#1abc9c", fontSize: 12 }}>🚀 超越</span>
+                <MatchBadge matchResult={s.matchResult} />
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* My Reviews */}
       <div>
         <SectionLabel>投稿したレビュー</SectionLabel>
         {myReviews.length === 0 ? (
-          <div style={{ marginTop: 24, textAlign: "center", padding: "48px 0" }}>
-            <p style={{ fontSize: 14, color: "#4a4440", letterSpacing: "0.06em", marginBottom: 20 }}>まだレビューがありません</p>
-            <button onClick={() => navigate("review-form")} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "12px 28px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>
-              最初のレビューを書く
-            </button>
+          <div style={{ marginTop: 22, textAlign: "center", padding: "44px 0" }}>
+            <p style={{ fontSize: 14, color: "#4a4440", marginBottom: 18 }}>まだレビューがありません</p>
+            <button onClick={() => navigate("review-form")} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "12px 26px", fontSize: 13, fontWeight: 600 }}>最初のレビューを書く</button>
           </div>
         ) : (
-          <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 2 }}>
+          <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 2 }}>
             {myReviews.map(r => {
               const store = stores.find(s => s.id === r.storeId);
-              return (
-                <div key={r.id} onClick={() => navigate("store", r.storeId)} style={{ cursor: "pointer" }}>
-                  <ReviewCard review={r} storeName={store?.name} />
-                </div>
-              );
+              return <div key={r.id} onClick={() => navigate("store", r.storeId)} style={{ cursor: "pointer" }}><ReviewCard review={r} storeName={store?.name} currentUserType={currentUser.userType} navigate={navigate} /></div>;
             })}
           </div>
         )}
@@ -762,47 +1631,28 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, stores, n
   );
 }
 
-// ─── Request Store Page ───────────────────────────────────────────────────────
-function RequestStorePage({ notify, navigate }) {
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState("");
-  const [area, setArea] = useState("");
-  const [note, setNote] = useState("");
-
+function RequestStorePage({ notify }) {
+  const [name, setName] = useState(""); const [category, setCategory] = useState(""); const [area, setArea] = useState(""); const [note, setNote] = useState("");
   const handleSubmit = () => {
     if (!name || !category || !area) { notify("必須項目を入力してください", "error"); return; }
     notify("申請を受け付けました。確認後に登録します。");
     setName(""); setCategory(""); setArea(""); setNote("");
   };
-
   return (
-    <div className="fade-in" style={{ maxWidth: 480, margin: "0 auto", padding: "48px 24px" }}>
+    <div className="fade-in" style={{ maxWidth: 480, margin: "0 auto", padding: "44px 16px" }}>
       <SectionLabel>店舗を申請する</SectionLabel>
-      <p style={{ marginTop: 8, fontSize: 13, color: "#5a5450", lineHeight: 1.8, letterSpacing: "0.04em" }}>
-        掲載されていない店舗の追加を申請できます。運営が確認後に登録します。
-      </p>
-      <div style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: 20 }}>
-        <FormSection label="店舗名" required>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="例：鮨 銀座" style={inputStyle} />
-        </FormSection>
-        <FormSection label="カテゴリ" required>
-          <input value={category} onChange={e => setCategory(e.target.value)} placeholder="例：鮨・フレンチ・バー" style={inputStyle} />
-        </FormSection>
-        <FormSection label="エリア" required>
-          <input value={area} onChange={e => setArea(e.target.value)} placeholder="例：銀座・渋谷" style={inputStyle} />
-        </FormSection>
-        <FormSection label="備考・補足">
-          <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder="URLや追加情報があれば..." style={{ ...inputStyle, resize: "vertical" }} />
-        </FormSection>
-        <button onClick={handleSubmit} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "14px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>
-          申請する
-        </button>
+      <p style={{ marginTop: 8, fontSize: 13, color: "#5a5450", lineHeight: 1.8 }}>掲載されていない店舗の追加を申請できます。</p>
+      <div style={{ marginTop: 36, display: "flex", flexDirection: "column", gap: 20 }}>
+        <FormSection label="店舗名" required><input value={name} onChange={e => setName(e.target.value)} placeholder="例：鮨 銀座" style={inputStyle} /></FormSection>
+        <FormSection label="カテゴリ" required><input value={category} onChange={e => setCategory(e.target.value)} placeholder="例：鮨・フレンチ" style={inputStyle} /></FormSection>
+        <FormSection label="エリア" required><input value={area} onChange={e => setArea(e.target.value)} placeholder="例：銀座・渋谷" style={inputStyle} /></FormSection>
+        <FormSection label="備考"><textarea value={note} onChange={e => setNote(e.target.value)} rows={3} style={{ ...inputStyle, resize: "vertical" }} /></FormSection>
+        <button onClick={handleSubmit} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "16px", fontSize: 14, letterSpacing: "0.12em", fontWeight: 600, borderRadius: 2 }}>申請する</button>
       </div>
     </div>
   );
 }
 
-// ─── Admin Page ───────────────────────────────────────────────────────────────
 function AdminPage({ navigate, currentUser, stores, setStores, reviews, users, notify }) {
   const [tab, setTab] = useState("stores");
   const [editingStore, setEditingStore] = useState(null);
@@ -810,118 +1660,74 @@ function AdminPage({ navigate, currentUser, stores, setStores, reviews, users, n
 
   if (!currentUser?.isAdmin) { navigate("home"); return null; }
 
-  const handleSaveStore = () => {
+  const handleSave = () => {
     if (!form.name) { notify("店舗名を入力してください", "error"); return; }
-    if (editingStore) {
-      setStores(prev => prev.map(s => s.id === editingStore ? { ...s, ...form } : s));
-      notify("店舗を更新しました");
-    } else {
-      setStores(prev => [...prev, { ...form, id: Date.now() }]);
-      notify("店舗を追加しました");
-    }
-    setEditingStore(null);
-    setForm({ name: "", category: "", area: "", priceRange: "¥¥", description: "", image: "🍽️" });
-  };
-
-  const startEdit = (store) => {
-    setEditingStore(store.id);
-    setForm({ name: store.name, category: store.category, area: store.area, priceRange: store.priceRange, description: store.description, image: store.image });
-    setTab("edit");
-  };
-
-  const deleteStore = (id) => {
-    setStores(prev => prev.filter(s => s.id !== id));
-    notify("削除しました");
+    if (editingStore) { setStores(prev => prev.map(s => s.id === editingStore ? { ...s, ...form } : s)); notify("更新しました"); }
+    else { setStores(prev => [...prev, { ...form, id: Date.now() }]); notify("追加しました"); }
+    setEditingStore(null); setForm({ name: "", category: "", area: "", priceRange: "¥¥", description: "", image: "🍽️" }); setTab("stores");
   };
 
   return (
-    <div className="fade-in" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 36 }}>
+    <div className="fade-in" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
         <SectionLabel>管理画面</SectionLabel>
-        <span style={{ fontSize: 11, background: "#c9a96e22", color: "#c9a96e", padding: "3px 10px", borderRadius: 20, letterSpacing: "0.1em" }}>ADMIN</span>
+        <span style={{ fontSize: 11, background: "#c9a96e22", color: "#c9a96e", padding: "3px 10px", borderRadius: 20 }}>ADMIN</span>
       </div>
-
-      {/* Stats Overview */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, marginBottom: 40 }}>
-        {[
-          { label: "登録店舗数", value: stores.length },
-          { label: "総レビュー数", value: reviews.length },
-          { label: "登録ユーザー数", value: users.length },
-        ].map(s => (
-          <div key={s.label} style={{ background: "#111012", padding: "20px", textAlign: "center", border: "1px solid #1e1c1a" }}>
-            <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 32, color: "#c9a96e" }}>{s.value}</p>
-            <p style={{ fontSize: 11, color: "#5a5450", letterSpacing: "0.1em", marginTop: 4 }}>{s.label}</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, marginBottom: 32 }}>
+        {[["登録店舗数",stores.length],["総レビュー数",reviews.length],["登録ユーザー数",users.length]].map(([l,v]) => (
+          <div key={l} style={{ background: "#111012", padding: "16px", textAlign: "center", border: "1px solid #1e1c1a" }}>
+            <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#c9a96e" }}>{v}</p>
+            <p style={{ fontSize: 11, color: "#5a5450", marginTop: 3 }}>{l}</p>
           </div>
         ))}
       </div>
-
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: 2, marginBottom: 28 }}>
-        {[["stores", "店舗管理"], ["edit", editingStore ? "店舗を編集" : "店舗を追加"], ["reviews", "レビュー一覧"], ["users", "ユーザー"]].map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)} style={{ background: tab === key ? "#c9a96e" : "#111012", border: "1px solid #1e1c1a", color: tab === key ? "#0c0c0e" : "#7a7268", padding: "10px 20px", fontSize: 12, letterSpacing: "0.1em", fontWeight: tab === key ? 600 : 400, transition: "all 0.2s" }}>
-            {label}
-          </button>
+      <div style={{ display: "flex", gap: 2, marginBottom: 22, flexWrap: "wrap" }}>
+        {[["stores","店舗管理"],["edit",editingStore?"店舗を編集":"店舗を追加"],["reviews","レビュー一覧"],["users","ユーザー"]].map(([key,label]) => (
+          <button key={key} onClick={() => setTab(key)} style={{ background: tab === key ? "#c9a96e" : "#111012", border: "1px solid #1e1c1a", color: tab === key ? "#0c0c0e" : "#7a7268", padding: "10px 16px", fontSize: 12, fontWeight: tab === key ? 600 : 400, transition: "all 0.2s" }}>{label}</button>
         ))}
       </div>
 
       {tab === "stores" && (
-        <div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {stores.map(store => (
-              <div key={store.id} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "16px 20px", display: "flex", alignItems: "center", gap: 16 }}>
-                <span style={{ fontSize: 24 }}>{store.image}</span>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 14, letterSpacing: "0.04em" }}>{store.name}</p>
-                  <p style={{ fontSize: 12, color: "#5a5450" }}>{store.area} / {store.category} / {store.priceRange}</p>
-                </div>
-                <p style={{ fontSize: 12, color: "#5a5450" }}>{reviews.filter(r => r.storeId === store.id).length}件</p>
-                <button onClick={() => startEdit(store)} style={{ background: "none", border: "1px solid #3a3028", color: "#9a9090", padding: "6px 14px", fontSize: 11, letterSpacing: "0.08em", borderRadius: 2 }}>編集</button>
-                <button onClick={() => deleteStore(store.id)} style={{ background: "none", border: "1px solid #4a2020", color: "#e74c3c", padding: "6px 14px", fontSize: 11, letterSpacing: "0.08em", borderRadius: 2 }}>削除</button>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {stores.map(store => (
+            <div key={store.id} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 20 }}>{store.image}</span>
+              <div style={{ flex: 1, minWidth: 140 }}>
+                <p style={{ fontSize: 13 }}>{store.name}</p>
+                <p style={{ fontSize: 11, color: "#5a5450" }}>{store.area} / {store.category} / {store.priceRange}</p>
               </div>
-            ))}
-          </div>
+              <p style={{ fontSize: 11, color: "#5a5450" }}>{reviews.filter(r => r.storeId === store.id).length}件</p>
+              <button onClick={() => { setEditingStore(store.id); setForm({ name: store.name, category: store.category, area: store.area, priceRange: store.priceRange, description: store.description, image: store.image }); setTab("edit"); }} style={{ background: "none", border: "1px solid #3a3028", color: "#9a9090", padding: "5px 12px", fontSize: 11, borderRadius: 2 }}>編集</button>
+              <button onClick={() => setStores(prev => prev.filter(s => s.id !== store.id))} style={{ background: "none", border: "1px solid #4a2020", color: "#e74c3c", padding: "5px 12px", fontSize: 11, borderRadius: 2 }}>削除</button>
+            </div>
+          ))}
         </div>
       )}
 
       {tab === "edit" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <FormSection label="店舗名" required>
-              <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="店舗名" style={inputStyle} />
-            </FormSection>
-            <FormSection label="アイコン絵文字">
-              <input value={form.image} onChange={e => setForm(p => ({ ...p, image: e.target.value }))} placeholder="🍽️" style={inputStyle} />
-            </FormSection>
-            <FormSection label="カテゴリ">
-              <input value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="鮨・フレンチ..." style={inputStyle} />
-            </FormSection>
-            <FormSection label="エリア">
-              <input value={form.area} onChange={e => setForm(p => ({ ...p, area: e.target.value }))} placeholder="銀座・渋谷..." style={inputStyle} />
-            </FormSection>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <FormSection label="店舗名" required><input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} style={inputStyle} /></FormSection>
+            <FormSection label="絵文字"><input value={form.image} onChange={e => setForm(p => ({ ...p, image: e.target.value }))} style={inputStyle} /></FormSection>
+            <FormSection label="カテゴリ"><input value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} style={inputStyle} /></FormSection>
+            <FormSection label="エリア"><input value={form.area} onChange={e => setForm(p => ({ ...p, area: e.target.value }))} style={inputStyle} /></FormSection>
             <FormSection label="価格帯">
               <select value={form.priceRange} onChange={e => setForm(p => ({ ...p, priceRange: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
-                {["¥", "¥¥", "¥¥¥", "¥¥¥¥"].map(v => <option key={v} value={v}>{v}</option>)}
+                {["¥","¥¥","¥¥¥","¥¥¥¥"].map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             </FormSection>
           </div>
-          <FormSection label="説明">
-            <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} style={{ ...inputStyle, resize: "vertical" }} />
-          </FormSection>
+          <FormSection label="説明"><textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} style={{ ...inputStyle, resize: "vertical" }} /></FormSection>
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => { setEditingStore(null); setTab("stores"); setForm({ name: "", category: "", area: "", priceRange: "¥¥", description: "", image: "🍽️" }); }} style={{ flex: 1, background: "none", border: "1px solid #2a2620", color: "#9a9090", padding: "14px", fontSize: 13 }}>キャンセル</button>
-            <button onClick={handleSaveStore} style={{ flex: 2, background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "14px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>
-              {editingStore ? "更新する" : "追加する"}
-            </button>
+            <button onClick={() => { setEditingStore(null); setTab("stores"); }} style={{ flex: 1, background: "none", border: "1px solid #2a2620", color: "#9a9090", padding: "14px", fontSize: 13 }}>キャンセル</button>
+            <button onClick={handleSave} style={{ flex: 2, background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "14px", fontSize: 13, fontWeight: 600, borderRadius: 2 }}>{editingStore ? "更新する" : "追加する"}</button>
           </div>
         </div>
       )}
 
       {tab === "reviews" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {reviews.map(r => {
-            const store = stores.find(s => s.id === r.storeId);
-            return <ReviewCard key={r.id} review={r} storeName={store?.name} showStore />;
-          })}
+          {reviews.map(r => { const store = stores.find(s => s.id === r.storeId); return <ReviewCard key={r.id} review={r} storeName={store?.name} showStore />; })}
         </div>
       )}
 
@@ -930,11 +1736,11 @@ function AdminPage({ navigate, currentUser, stores, setStores, reviews, users, n
           {users.map(u => {
             const ut = USER_TYPES[u.userType];
             return (
-              <div key={u.id} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "16px 20px", display: "flex", alignItems: "center", gap: 16 }}>
-                <span style={{ fontSize: 24 }}>{ut?.icon || "👤"}</span>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 14, letterSpacing: "0.04em" }}>{u.name} {u.isAdmin && <span style={{ fontSize: 10, color: "#c9a96e", marginLeft: 8, border: "1px solid #c9a96e44", padding: "1px 6px" }}>admin</span>}</p>
-                  <p style={{ fontSize: 12, color: "#5a5450" }}>{u.email}</p>
+              <div key={u.id} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 20 }}>{ut?.icon || "👤"}</span>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <p style={{ fontSize: 13 }}>{u.name} {u.isAdmin && <span style={{ fontSize: 10, color: "#c9a96e", marginLeft: 8, border: "1px solid #c9a96e44", padding: "1px 6px" }}>admin</span>}</p>
+                  <p style={{ fontSize: 11, color: "#5a5450" }}>{u.email}</p>
                 </div>
                 <p style={{ fontSize: 12, color: ut?.color }}>{ut?.label || "-"}</p>
                 <p style={{ fontSize: 12, color: "#5a5450" }}>{reviews.filter(r => r.userId === u.id).length}件</p>
@@ -947,80 +1753,318 @@ function AdminPage({ navigate, currentUser, stores, setStores, reviews, users, n
   );
 }
 
-// ─── Sub Components ───────────────────────────────────────────────────────────
-function StoreCard({ store, reviews, navigate }) {
+function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStores, precomputedResult }) {
   const stats = getGapStats(reviews);
+  const matchResult = precomputedResult !== undefined
+    ? precomputedResult
+    : (currentUser && allReviews && allStores ? calcMatchScore(store.id, currentUser, allReviews, allStores) : null);
   return (
-    <button onClick={() => navigate("store", store.id)} className="hover-lift" style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "24px", textAlign: "left", color: "#e8e0d4", borderRadius: 3, transition: "all 0.2s" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 16 }}>
-        <span style={{ fontSize: 36 }}>{store.image}</span>
-        <div>
-          <p style={{ fontSize: 16, fontFamily: "'Noto Serif JP', serif", letterSpacing: "0.04em", marginBottom: 4 }}>{store.name}</p>
-          <p style={{ fontSize: 11, color: "#5a5450", letterSpacing: "0.08em" }}>{store.area} / {store.category}</p>
+    <button onClick={() => navigate("store", store.id)} className="hover-lift" style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "20px", textAlign: "left", color: "#e8e0d4", borderRadius: 3, width: "100%" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
+        <span style={{ fontSize: 30 }}>{store.image}</span>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: 14, letterSpacing: "0.04em", marginBottom: 3 }}>{store.name}</p>
+          <p style={{ fontSize: 11, color: "#5a5450" }}>{store.area} / {store.category}</p>
         </div>
-        <span style={{ marginLeft: "auto", fontSize: 12, color: "#c9a96e" }}>{store.priceRange}</span>
+        <span style={{ fontSize: 11, color: "#c9a96e" }}>{store.priceRange}</span>
       </div>
-      <p style={{ fontSize: 12, color: "#5a5450", lineHeight: 1.7, letterSpacing: "0.04em", marginBottom: 16 }}>{store.description}</p>
+      <p style={{ fontSize: 12, color: "#5a5450", lineHeight: 1.7, marginBottom: 12 }}>{store.description}</p>
+      <div style={{ marginBottom: 10 }}>
+        {currentUser
+          ? (matchResult && <MatchBadge matchResult={matchResult} />)
+          : (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8,
+              background: "#1a1814", border: "1px dashed #2a2620", borderRadius: 3, padding: "6px 10px",
+              width: "100%" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2px dashed #2a2620",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ fontSize: 14, color: "#3a3028" }}>?</span>
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 10, color: "#3a3028", letterSpacing: "0.1em", fontWeight: 600 }}>YOUR MATCH</p>
+                <p style={{ fontSize: 10, color: "#2a2620", marginTop: 1 }}>ログイン後に表示されます</p>
+              </div>
+            </div>
+          )
+        }
+      </div>
       {stats ? (
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 10 }}>
           <span style={{ fontSize: 11, color: "#1abc9c" }}>🚀 {stats.beyond}</span>
           <span style={{ fontSize: 11, color: "#f39c12" }}>✓ {stats.match}</span>
           <span style={{ fontSize: 11, color: "#e74c3c" }}>↓ {stats.below}</span>
-          <span style={{ fontSize: 10, color: "#3a3028", marginLeft: "auto" }}>{stats.total}件のレビュー</span>
+          <span style={{ fontSize: 10, color: "#3a3028", marginLeft: "auto" }}>{stats.total}件</span>
         </div>
-      ) : (
-        <p style={{ fontSize: 11, color: "#3a3028" }}>まだレビューなし</p>
-      )}
+      ) : <p style={{ fontSize: 11, color: "#3a3028" }}>まだレビューなし</p>}
     </button>
   );
 }
 
-function ReviewCard({ review, storeName, showStore }) {
+function ReviewCard({ review, storeName, showStore, currentUserType, navigate }) {
   const gap = calcGap(review.preExpect, review.result);
-  const expectLabels = { low: "低い期待で訪問", normal: "普通の期待で訪問", high: "高い期待で訪問" };
+  const expectLabels = { low: "低い期待", normal: "普通の期待", high: "高い期待" };
   const ut = USER_TYPES[review.userType];
+  const isSameType = currentUserType && review.userType === currentUserType;
   return (
-    <div style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "20px 24px" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+    <div style={{ background: "#111012", border: `1px solid ${isSameType ? ut?.color + "44" : "#1e1c1a"}`, padding: "16px 20px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <p style={{ fontSize: 13, letterSpacing: "0.04em", fontWeight: 600 }}>{review.userName}</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <button
+              onClick={() => navigate && review.userId && navigate("user-profile", review.userId)}
+              style={{ background: "none", border: "none", color: "#e8e0d4", fontSize: 13, fontWeight: 600, padding: 0, cursor: navigate ? "pointer" : "default", textDecoration: navigate ? "underline" : "none", textDecorationColor: "#3a3028" }}
+            >{review.userName}</button>
             {ut && <span style={{ fontSize: 10, color: ut.color, background: ut.color + "15", padding: "2px 8px", borderRadius: 20 }}>{ut.icon} {ut.label}</span>}
+            {isSameType && <span style={{ fontSize: 10, color: "#c9a96e" }}>あなたと同タイプ</span>}
             {showStore && storeName && <span style={{ fontSize: 11, color: "#5a5450" }}>→ {storeName}</span>}
           </div>
-          <p style={{ fontSize: 11, color: "#3a3028", marginTop: 4 }}>{review.date}</p>
+          <p style={{ fontSize: 11, color: "#3a3028", marginTop: 3 }}>{review.date}</p>
         </div>
         <div style={{ textAlign: "right" }}>
-          <p style={{ fontSize: 18, color: gap.color }}>{gap.emoji}</p>
+          <p style={{ fontSize: 16, color: gap.color }}>{gap.emoji}</p>
           <p style={{ fontSize: 10, color: gap.color, letterSpacing: "0.1em" }}>{gap.label}</p>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 11, color: "#7a7268", background: "#1a1814", padding: "3px 10px", borderRadius: 20, letterSpacing: "0.06em" }}>
-          {expectLabels[review.preExpect]}
-        </span>
-        <span style={{ fontSize: 11, color: gap.color, background: gap.color + "15", padding: "3px 10px", borderRadius: 20 }}>
-          {review.result}
-        </span>
+      <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 11, color: "#7a7268", background: "#1a1814", padding: "2px 9px", borderRadius: 20 }}>{expectLabels[review.preExpect]}で訪問</span>
+        <span style={{ fontSize: 11, color: gap.color, background: gap.color + "15", padding: "2px 9px", borderRadius: 20 }}>{review.result}</span>
       </div>
-      {review.comment && <p style={{ fontSize: 13, color: "#7a7268", lineHeight: 1.8, letterSpacing: "0.04em" }}>{review.comment}</p>}
+      {review.comment && <p style={{ fontSize: 13, color: "#7a7268", lineHeight: 1.8 }}>{review.comment}</p>}
     </div>
   );
 }
 
-function SectionLabel({ children }) {
-  return (
-    <p style={{ fontSize: 11, letterSpacing: "0.25em", color: "#c9a96e", textTransform: "uppercase", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", borderBottom: "1px solid #1e1c1a", paddingBottom: 10, display: "inline-block" }}>
-      {children}
-    </p>
+// ─── 他ユーザーのプロフィールページ ──────────────────────────────────────────
+function UserProfilePage({ navigate, currentUser, users, reviews, stores, follows, setFollows, pageParam }) {
+  const targetUser = users.find(u => u.id === pageParam);
+  if (!targetUser) return (
+    <div style={{ padding: 80, textAlign: "center", color: "#4a4440" }}>
+      ユーザーが見つかりません
+    </div>
   );
+
+  const ut = USER_TYPES[targetUser.userType];
+  const targetReviews = reviews.filter(r => r.userId === targetUser.id);
+  const isMe = currentUser?.id === targetUser.id;
+  const followingIds = follows[currentUser?.id] || [];
+  const isFollowing = followingIds.includes(targetUser.id);
+
+  // フォロー/アンフォロー
+  const toggleFollow = async () => {
+    if (!currentUser) { navigate("login"); return; }
+    if (isFollowing) {
+      await supabase.from("follows")
+        .delete()
+        .eq("follower_id", currentUser.id)
+        .eq("followee_id", targetUser.id);
+      setFollows(prev => ({
+        ...prev,
+        [currentUser.id]: (prev[currentUser.id] || []).filter(id => id !== targetUser.id),
+      }));
+    } else {
+      await supabase.from("follows")
+        .insert({ follower_id: currentUser.id, followee_id: targetUser.id });
+      setFollows(prev => ({
+        ...prev,
+        [currentUser.id]: [...(prev[currentUser.id] || []), targetUser.id],
+      }));
+    }
+  };
+
+  // 自分との相性スコア（タイプ親和度 × ヒット傾向の重複度）
+  const affinityScore = (() => {
+    if (!currentUser || isMe) return null;
+    const affinity = typeAffinity(currentUser.userType, targetUser.userType); // 0.2〜1.0
+    // 共通してヒットしている店舗の割合
+    const myHitStoreIds = new Set(
+      reviews.filter(r => r.userId === currentUser.id && isHit(r)).map(r => r.storeId)
+    );
+    const theirHitStoreIds = new Set(
+      targetReviews.filter(r => isHit(r)).map(r => r.storeId)
+    );
+    const union = new Set([...myHitStoreIds, ...theirHitStoreIds]);
+    const intersection = [...myHitStoreIds].filter(id => theirHitStoreIds.has(id));
+    const overlapRate = union.size > 0 ? intersection.length / union.size : 0;
+    // 総合: タイプ親和度60% + 嗜好重複40%
+    return Math.round((affinity * 0.6 + overlapRate * 0.4) * 100);
+  })();
+
+  // よく行くエリア・ジャンル（上位3つ）
+  const areaCounts = {}, genreCounts = {};
+  targetReviews.forEach(r => {
+    const s = stores.find(st => st.id === r.storeId);
+    if (!s) return;
+    areaCounts[s.area]  = (areaCounts[s.area]  || 0) + 1;
+    genreCounts[s.category] = (genreCounts[s.category] || 0) + 1;
+  });
+  const topAreas  = Object.entries(areaCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k);
+  const topGenres = Object.entries(genreCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k);
+
+  // フォロワー数
+  const followerCount  = Object.values(follows).filter(ids => ids.includes(targetUser.id)).length;
+  const followingCount = (follows[targetUser.id] || []).length;
+
+  return (
+    <div className="fade-in" style={{ maxWidth: 700, margin: "0 auto", padding: "40px 16px" }}>
+
+      {/* ── ヘッダー ── */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 18, marginBottom: 24, flexWrap: "wrap" }}>
+        <div style={{ width: 58, height: 58, background: ut?.color + "22", border: `1px solid ${ut?.color}44`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{ut?.icon}</div>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 400, marginBottom: 4, letterSpacing: "0.04em" }}>{targetUser.name}</h1>
+          <p style={{ fontSize: 12, color: ut?.color, letterSpacing: "0.1em", marginBottom: 2 }}>{ut?.label}</p>
+          <p style={{ fontSize: 12, color: "#5a5450" }}>{ut?.desc}</p>
+        </div>
+        {!isMe && currentUser && (
+          <button onClick={toggleFollow} style={{
+            background: isFollowing ? "transparent" : "#c9a96e",
+            border: `1px solid ${isFollowing ? "#3a3028" : "#c9a96e"}`,
+            color: isFollowing ? "#7a7268" : "#0c0c0e",
+            padding: "8px 20px", fontSize: 12, fontWeight: 600, borderRadius: 2, flexShrink: 0,
+            letterSpacing: "0.08em"
+          }}>
+            {isFollowing ? "フォロー中" : "フォローする"}
+          </button>
+        )}
+      </div>
+
+      {/* ── フォロー数 ── */}
+      <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
+        <span><span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{followingCount}</span><span style={{ fontSize: 11, color: "#5a5450", marginLeft: 5 }}>フォロー中</span></span>
+        <span><span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{followerCount}</span><span style={{ fontSize: 11, color: "#5a5450", marginLeft: 5 }}>フォロワー</span></span>
+        <span><span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{targetReviews.length}</span><span style={{ fontSize: 11, color: "#5a5450", marginLeft: 5 }}>レビュー</span></span>
+      </div>
+
+      {/* ── 自分との相性 ── */}
+      {affinityScore !== null && (
+        <div style={{ background: "#111012", border: "1px solid #1e1c1a", borderRadius: 4, padding: "16px 20px", marginBottom: 20 }}>
+          <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#4a4440", marginBottom: 10, textTransform: "uppercase" }}>あなたとの相性</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ position: "relative", width: 48, height: 48, flexShrink: 0 }}>
+              <svg viewBox="0 0 36 36" style={{ width: 48, height: 48, transform: "rotate(-90deg)" }}>
+                <circle cx="18" cy="18" r="14" fill="none" stroke="#1e1c1a" strokeWidth="3" />
+                <circle cx="18" cy="18" r="14" fill="none"
+                  stroke={affinityScore >= 70 ? "#1abc9c" : affinityScore >= 50 ? "#f39c12" : "#7a7268"}
+                  strokeWidth="3"
+                  strokeDasharray={`${(affinityScore / 100) * 87.96} 87.96`}
+                  strokeLinecap="round" />
+              </svg>
+              <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11,
+                color: affinityScore >= 70 ? "#1abc9c" : affinityScore >= 50 ? "#f39c12" : "#7a7268", fontWeight: 700 }}>{affinityScore}</span>
+            </div>
+            <div>
+              <p style={{ fontSize: 13, color: "#e8e0d4", marginBottom: 3 }}>
+                {affinityScore >= 70 ? "味覚の傾向が近いユーザーです" : affinityScore >= 50 ? "一部の好みが重なっています" : "味覚の傾向が異なるユーザーです"}
+              </p>
+              <p style={{ fontSize: 11, color: "#5a5450" }}>タイプ親和度 + 訪問店舗のヒット重複度で算出</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── よく行くエリア・ジャンル ── */}
+      {targetReviews.length > 0 && (
+        <div style={{ background: "#111012", border: "1px solid #1e1c1a", borderRadius: 4, padding: "16px 20px", marginBottom: 24 }}>
+          <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#4a4440", marginBottom: 12, textTransform: "uppercase" }}>よく行くエリア・ジャンル</p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {topAreas.map(a => (
+              <span key={a} style={{ fontSize: 12, color: "#c9a96e", background: "#c9a96e15", border: "1px solid #c9a96e33", padding: "4px 12px", borderRadius: 20 }}>{a}</span>
+            ))}
+            {topGenres.map(g => (
+              <span key={g} style={{ fontSize: 12, color: "#7a9acc", background: "#7a9acc15", border: "1px solid #7a9acc33", padding: "4px 12px", borderRadius: 20 }}>{g}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── 口コミ一覧（店舗カード形式・マッチ率付き） ── */}
+      <SectionLabel>口コミ ({targetReviews.length}件)</SectionLabel>
+      {targetReviews.length === 0 ? (
+        <p style={{ marginTop: 22, color: "#4a4440", fontSize: 14 }}>まだレビューがありません</p>
+      ) : (
+        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+          {targetReviews
+            .sort((a, b) => b.date.localeCompare(a.date))
+            .map(r => {
+              const store = stores.find(s => s.id === r.storeId);
+              if (!store) return null;
+              const gap = calcGap(r.preExpect, r.result);
+              const expectLabels = { low: "低い期待", normal: "普通の期待", high: "高い期待" };
+              const ut = USER_TYPES[r.userType];
+              // ログイン中のみ自分視点でマッチ率を計算する
+              const matchResult = currentUser
+                ? calcMatchScore(store.id, currentUser, reviews, stores)
+                : null;
+              return (
+                <button key={r.id} onClick={() => navigate("store", store.id)}
+                  style={{ background: "#111012", border: "1px solid #1e1c1a", borderRadius: 3,
+                    padding: "16px", textAlign: "left", color: "#e8e0d4", width: "100%" }}>
+
+                  {/* 上段: 店舗情報 + マッチバッジ */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                    <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>{store.image}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17,
+                        fontWeight: 400, letterSpacing: "0.04em", marginBottom: 2,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{store.name}</p>
+                      <p style={{ fontSize: 11, color: "#4a4440" }}>{store.area} · {store.category} · {store.priceRange}</p>
+                    </div>
+                    {currentUser
+                      ? (matchResult && <MatchBadge matchResult={matchResult} />)
+                      : (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 8,
+                          background: "#1a1814", border: "1px solid #2a2620",
+                          borderRadius: 3, padding: "5px 10px" }}>
+                          <div style={{ width: 34, height: 34, borderRadius: "50%",
+                            border: "2px dashed #2a2620", display: "flex", alignItems: "center",
+                            justifyContent: "center", flexShrink: 0 }}>
+                            <span style={{ fontSize: 14, color: "#3a3028" }}>?</span>
+                          </div>
+                          <div>
+                            <p style={{ fontSize: 10, color: "#3a3028", letterSpacing: "0.08em", fontWeight: 600 }}>YOUR MATCH</p>
+                            <p style={{ fontSize: 10, color: "#2a2620", marginTop: 1 }}>ログイン後に表示</p>
+                          </div>
+                        </div>
+                      )
+                    }
+                  </div>
+
+                  {/* 下段: ギャップ判定 + 期待値タグ + 日付（1行に収める） */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8,
+                    borderTop: "1px solid #1a1814", paddingTop: 10, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12, color: gap.color, fontWeight: 600,
+                      letterSpacing: "0.06em", marginRight: 2 }}>{gap.emoji} {gap.label}</span>
+                    <span style={{ fontSize: 11, color: "#5a5450", background: "#1a1814",
+                      padding: "2px 8px", borderRadius: 20 }}>{expectLabels[r.preExpect]}</span>
+                    <span style={{ fontSize: 11, color: gap.color, background: gap.color + "15",
+                      padding: "2px 8px", borderRadius: 20 }}>{r.result}</span>
+                    <span style={{ fontSize: 10, color: "#3a3028", marginLeft: "auto" }}>{r.date}</span>
+                  </div>
+
+                  {/* コメント */}
+                  {r.comment && (
+                    <p style={{ fontSize: 12, color: "#7a7268", lineHeight: 1.8,
+                      marginTop: 10, paddingTop: 10, borderTop: "1px solid #1a1814" }}>{r.comment}</p>
+                  )}
+                </button>
+              );
+            })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+function SectionLabel({ children }) {
+  return <p style={{ fontSize: 11, letterSpacing: "0.25em", color: "#c9a96e", textTransform: "uppercase", fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", borderBottom: "1px solid #1e1c1a", paddingBottom: 10, display: "inline-block" }}>{children}</p>;
 }
 
 function FormSection({ label, required, children }) {
   return (
     <div>
       <label style={{ display: "block", fontSize: 11, color: "#7a7268", letterSpacing: "0.12em", marginBottom: 8, textTransform: "uppercase" }}>
-        {label} {required && <span style={{ color: "#c9a96e" }}>*</span>}
+        {label}{required && <span style={{ color: "#c9a96e", marginLeft: 4 }}>*</span>}
       </label>
       {children}
     </div>
@@ -1028,13 +2072,6 @@ function FormSection({ label, required, children }) {
 }
 
 const inputStyle = {
-  width: "100%",
-  background: "#1a1814",
-  border: "1px solid #2a2620",
-  borderRadius: 3,
-  padding: "12px 16px",
-  color: "#e8e0d4",
-  fontSize: 14,
-  outline: "none",
-  letterSpacing: "0.04em",
+  width: "100%", background: "#1a1814", border: "1px solid #2a2620", borderRadius: 3,
+  padding: "12px 16px", color: "#e8e0d4", fontSize: 16, outline: "none", letterSpacing: "0.04em",
 };
