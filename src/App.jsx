@@ -703,78 +703,65 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [pageParam, setPageParam] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [searchQ, setSearchQ] = useState("");
   const [notification, setNotification] = useState(null);
   const [follows, setFollows] = useState({});
-  const [loading, setLoading] = useState(true);
 
   // ── Supabase初期ロード ──────────────────────────────────
   useEffect(() => {
-    // セッション復元
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         supabase.from("profiles").select("*").eq("id", session.user.id).single()
           .then(({ data }) => {
-            if (data) setCurrentUser({
-              ...data,
-              email: session.user.email,
-              userType: data.user_type,
-              isAdmin: data.is_admin,
-            });
+            if (data) setCurrentUser({ ...data, email: session.user.email, userType: data.user_type, isAdmin: data.is_admin });
           });
       }
     });
-    // 店舗・レビュー・ユーザー・フォローを並列取得
     Promise.all([
       supabase.from("stores").select("*").order("id"),
       supabase.from("reviews").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("*"),
       supabase.from("follows").select("*"),
     ]).then(([storesRes, reviewsRes, profilesRes, followsRes]) => {
-      // 店舗: Supabaseにデータがあればそちら、なければサンプルデータ
-      if (storesRes.data && storesRes.data.length > 0) {
-        setStores(storesRes.data.map(s => ({
-          id: s.id, name: s.name, category: s.category, area: s.area,
-          priceRange: s.price_range, description: s.description, image: s.image,
-        })));
-      } else {
-        setStores(INITIAL_STORES);
-      }
-      // レビュー: Supabaseにデータがあればそちら、なければサンプルデータ
-      if (reviewsRes.data && reviewsRes.data.length > 0) {
-        setReviews(reviewsRes.data.map(r => ({
-          id: r.id, storeId: r.store_id, userId: r.user_id, userName: r.user_name,
-          userType: r.user_type, preExpect: r.pre_expect, result: r.result,
-          comment: r.comment, date: r.date,
-        })));
-      } else {
-        setReviews([...INITIAL_REVIEWS, ...SAMPLE_REVIEWS]);
-      }
-      // ユーザー: Supabaseのプロフィール + サンプルユーザーをマージ
-      const dbUsers = (profilesRes.data || []).map(p => ({
-        ...p, userType: p.user_type, isAdmin: p.is_admin,
-      }));
+      setStores(storesRes.data?.length
+        ? storesRes.data.map(s => ({ id: s.id, name: s.name, category: s.category, area: s.area, priceRange: s.price_range, description: s.description, image: s.image }))
+        : INITIAL_STORES);
+      setReviews(reviewsRes.data?.length >= 10
+        ? reviewsRes.data.map(r => ({ id: r.id, storeId: r.store_id, userId: r.user_id, userName: r.user_name, userType: r.user_type, preExpect: r.pre_expect, result: r.result, comment: r.comment, date: r.date }))
+        : [...INITIAL_REVIEWS, ...SAMPLE_REVIEWS]);
+      const dbUsers = (profilesRes.data || []).map(p => ({ ...p, userType: p.user_type, isAdmin: p.is_admin }));
       setUsers([...dbUsers, ...SAMPLE_USERS]);
-      // フォロー
       if (followsRes.data) {
-        const followMap = {};
-        followsRes.data.forEach(f => {
-          if (!followMap[f.follower_id]) followMap[f.follower_id] = [];
-          followMap[f.follower_id].push(f.followee_id);
-        });
-        setFollows(followMap);
+        const map = {};
+        followsRes.data.forEach(f => { if (!map[f.follower_id]) map[f.follower_id] = []; map[f.follower_id].push(f.followee_id); });
+        setFollows(map);
       }
       setLoading(false);
     });
-
-    // 認証状態の変化を監視
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) setCurrentUser(null);
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  const navigate = (p, param = null) => { setPage(p); setPageParam(param); window.scrollTo(0, 0); };
+  const navigate = (p, param = null) => {
+    // ブラウザ履歴に追加
+    window.history.pushState({ page: p, param }, "", `#${p}${param ? `/${param}` : ""}`);
+    setPage(p); setPageParam(param); window.scrollTo(0, 0);
+  };
+
+  // ブラウザの戻る/進むボタン対応
+  useEffect(() => {
+    const handlePop = (e) => {
+      if (e.state?.page) { setPage(e.state.page); setPageParam(e.state.param || null); window.scrollTo(0, 0); }
+      else { setPage("home"); setPageParam(null); }
+    };
+    window.addEventListener("popstate", handlePop);
+    // 初期状態をhistoryに登録
+    window.history.replaceState({ page: "home", param: null }, "", "#home");
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
   const notify = (msg, type = "success") => { setNotification({ msg, type }); setTimeout(() => setNotification(null), 3000); };
   const props = { navigate, stores, setStores, reviews, setReviews, currentUser, setCurrentUser, users, setUsers, pageParam, searchQ, setSearchQ, notify, follows, setFollows };
 
@@ -791,6 +778,7 @@ export default function App() {
     <div style={{ fontFamily: "'Noto Serif JP','Georgia',serif", background: "#0c0c0e", minHeight: "100vh", color: "#e8e0d4" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
+        html,body{background:#0c0c0e!important;margin:0;padding:0}
         *{box-sizing:border-box;margin:0;padding:0}
         input,textarea,select{font-size:16px!important;font-family:inherit;-webkit-text-size-adjust:none;touch-action:manipulation}
         button{cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;transition:filter 0.15s ease,transform 0.1s ease}
@@ -816,7 +804,7 @@ export default function App() {
         {page === "review-form" && <ReviewFormPage {...props} />}
         {page === "login" && <LoginPage {...props} />}
         {page === "register" && <RegisterPage {...props} stores={stores} />}
-        {page === "profile" && <ProfilePage {...props} />}
+        {page === "profile" && <ProfilePage {...props} setReviews={setReviews} setFollows={setFollows} />}
         {page === "request-store" && <RequestStorePage {...props} />}
         {page === "admin" && <AdminPage {...props} />}
         {page === "user-profile" && <UserProfilePage {...props} />}
@@ -825,17 +813,12 @@ export default function App() {
   );
 }
 
-function NavBar({ navigate, currentUser, setCurrentUser, searchQ, setSearchQ, notify }) {
-  const [localQ, setLocalQ] = useState(searchQ);
-  const handleSearch = (e) => { e.preventDefault(); setSearchQ(localQ); navigate("search"); };
+function NavBar({ navigate, currentUser, setCurrentUser, notify }) {
   const logout = async () => { await supabase.auth.signOut(); setCurrentUser(null); notify("ログアウトしました"); navigate("home"); };
 
   return (
     <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(12,12,14,0.96)", backdropFilter: "blur(12px)", borderBottom: "1px solid #1e1c1a", height: 64, display: "flex", alignItems: "center", padding: "0 16px", gap: 14 }}>
       <button onClick={() => navigate("home")} style={{ background: "none", border: "none", color: "#e8e0d4", fontSize: 16, fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>Gap Review</button>
-      <form onSubmit={handleSearch} style={{ flex: 1, maxWidth: 320 }}>
-        <input value={localQ} onChange={e => setLocalQ(e.target.value)} placeholder="店舗を検索..." style={{ width: "100%", background: "#1a1814", border: "1px solid #2a2620", borderRadius: 3, padding: "8px 12px", color: "#e8e0d4", outline: "none" }} />
-      </form>
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
         <button onClick={() => navigate("search")} style={{ background: "none", border: "none", color: "#9a9090", fontSize: 13 }}>一覧</button>
         {currentUser ? (
@@ -1184,24 +1167,12 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
     if (!storeId || !preExpect || !result) { notify("必須項目を入力してください", "error"); return; }
     const today = new Date().toISOString().slice(0, 10);
     const { data, error } = await supabase.from("reviews").insert({
-      store_id: storeId,
-      user_id: currentUser.id,
-      user_name: currentUser.name,
-      user_type: currentUser.userType || currentUser.user_type,
-      pre_expect: preExpect,
-      result,
-      comment,
-      date: today,
+      store_id: parseInt(storeId), user_id: currentUser.id, user_name: currentUser.name,
+      user_type: currentUser.userType || currentUser.user_type, pre_expect: preExpect, result, comment, date: today,
     }).select().single();
     if (error) { notify("投稿に失敗しました", "error"); return; }
-    setReviews(prev => [{
-      id: data.id, storeId: data.store_id, userId: data.user_id,
-      userName: data.user_name, userType: data.user_type,
-      preExpect: data.pre_expect, result: data.result,
-      comment: data.comment, date: data.date,
-    }, ...prev]);
-    setSubmitted(true);
-    notify("レビューを投稿しました");
+    setReviews(prev => [{ id: data.id, storeId: data.store_id, userId: data.user_id, userName: data.user_name, userType: data.user_type, preExpect: data.pre_expect, result: data.result, comment: data.comment, date: data.date }, ...prev]);
+    setSubmitted(true); notify("レビューを投稿しました");
   };
 
   if (submitted) return (
@@ -1288,7 +1259,6 @@ function LoginPage({ navigate, setCurrentUser, notify }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
   const handleLogin = async () => {
     if (!email || !password) { notify("メールアドレスとパスワードを入力してください", "error"); return; }
     setIsLoading(true);
@@ -1298,7 +1268,6 @@ function LoginPage({ navigate, setCurrentUser, notify }) {
     if (profile) { setCurrentUser({ ...profile, email: data.user.email, userType: profile.user_type, isAdmin: profile.is_admin }); notify(`ようこそ、${profile.name}さん`); navigate("home"); }
     setIsLoading(false);
   };
-
   return (
     <div className="fade-in" style={{ maxWidth: 400, margin: "60px auto", padding: "0 20px" }}>
       <SectionLabel>ログイン</SectionLabel>
@@ -1337,14 +1306,9 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
   const handleRegister = async () => {
     if (!name || !email || !password || !userType) { notify("全ての項目を入力してください", "error"); return; }
     setIsSubmitting(true);
-    // Supabase Auth でユーザー作成
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) { notify(error.message, "error"); setIsSubmitting(false); return; }
-    // profiles テーブルに追加情報を保存
-    const { error: profileError } = await supabase.from("profiles").insert({
-      id: data.user.id, name, user_type: userType, is_admin: false,
-    });
-    if (profileError) { notify("登録に失敗しました", "error"); setIsSubmitting(false); return; }
+    await supabase.from("profiles").insert({ id: data.user.id, name, user_type: userType, is_admin: false });
     const newUser = { id: data.user.id, name, user_type: userType, userType, is_admin: false, isAdmin: false, email };
     setCurrentUser(newUser);
     setUsers(prev => [...prev, newUser]);
@@ -1502,9 +1466,17 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
 }
 
 
-function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, stores, notify, follows, users }) {
+function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReviews, stores, notify, follows, setFollows, users }) {
   if (!currentUser) { navigate("login"); return null; }
   const myReviews = reviews.filter(r => r.userId === currentUser.id);
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm("このレビューを削除しますか？")) return;
+    const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
+    if (error) { notify("削除に失敗しました", "error"); return; }
+    setReviews(prev => prev.filter(r => r.id !== reviewId));
+    notify("レビューを削除しました");
+  };
   const ut = USER_TYPES[currentUser.userType];
   const visitedIds = new Set(myReviews.map(r => r.storeId));
   const recommended = stores
@@ -1525,21 +1497,59 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, stores, n
         </div>
       </div>
 
-      {/* フォロー・フォロワー数 */}
+      {/* フォロー・フォロワー数 + モーダル */}
       {(() => {
-        const myFollowing = (follows[currentUser.id] || []).length;
-        const myFollowers = Object.entries(follows).filter(([, ids]) => ids.includes(currentUser.id)).length;
+        const myFollowingIds = follows[currentUser.id] || [];
+        const myFollowers = Object.entries(follows).filter(([, ids]) => ids.includes(currentUser.id)).map(([id]) => id);
+        const [followModal, setFollowModal] = useState(null); // "following" | "followers" | null
+
+        const handleUnfollow = async (targetId) => {
+          await supabase.from("follows").delete().eq("follower_id", currentUser.id).eq("followee_id", targetId);
+          setFollows(prev => ({ ...prev, [currentUser.id]: (prev[currentUser.id] || []).filter(id => id !== targetId) }));
+        };
+
+        const followingUsers = myFollowingIds.map(id => users.find(u => u.id === id)).filter(Boolean);
+        const followerUsers = myFollowers.map(id => users.find(u => u.id === id)).filter(Boolean);
+
         return (
-          <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
-            <button onClick={() => {}} style={{ background: "none", border: "none", padding: 0, color: "#e8e0d4", textAlign: "left" }}>
-              <span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{myFollowing}</span>
-              <span style={{ fontSize: 11, color: "#5a5450", marginLeft: 5 }}>フォロー中</span>
-            </button>
-            <button onClick={() => {}} style={{ background: "none", border: "none", padding: 0, color: "#e8e0d4", textAlign: "left" }}>
-              <span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{myFollowers}</span>
-              <span style={{ fontSize: 11, color: "#5a5450", marginLeft: 5 }}>フォロワー</span>
-            </button>
-          </div>
+          <>
+            <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
+              <button onClick={() => setFollowModal("following")} style={{ background: "none", border: "none", padding: 0, color: "#e8e0d4", textAlign: "left" }}>
+                <span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{myFollowingIds.length}</span>
+                <span style={{ fontSize: 11, color: "#5a5450", marginLeft: 5 }}>フォロー中</span>
+              </button>
+              <button onClick={() => setFollowModal("followers")} style={{ background: "none", border: "none", padding: 0, color: "#e8e0d4", textAlign: "left" }}>
+                <span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{myFollowers.length}</span>
+                <span style={{ fontSize: 11, color: "#5a5450", marginLeft: 5 }}>フォロワー</span>
+              </button>
+            </div>
+            {followModal && (
+              <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setFollowModal(null)}>
+                <div style={{ background: "#111012", border: "1px solid #2a2620", borderRadius: 6, width: "100%", maxWidth: 360, maxHeight: "70vh", overflow: "auto" }} onClick={e => e.stopPropagation()}>
+                  <div style={{ padding: "16px 20px", borderBottom: "1px solid #1e1c1a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <p style={{ fontSize: 14, letterSpacing: "0.1em" }}>{followModal === "following" ? "フォロー中" : "フォロワー"}</p>
+                    <button onClick={() => setFollowModal(null)} style={{ background: "none", border: "none", color: "#5a5450", fontSize: 18 }}>✕</button>
+                  </div>
+                  {(followModal === "following" ? followingUsers : followerUsers).length === 0 ? (
+                    <p style={{ padding: 24, textAlign: "center", color: "#5a5450", fontSize: 13 }}>まだいません</p>
+                  ) : (
+                    (followModal === "following" ? followingUsers : followerUsers).map(u => {
+                      const ut = USER_TYPES[u.userType || u.user_type];
+                      return (
+                        <div key={u.id} style={{ padding: "12px 20px", borderBottom: "1px solid #1a1814", display: "flex", alignItems: "center", gap: 12 }}>
+                          <span style={{ fontSize: 20 }}>{ut?.icon}</span>
+                          <button onClick={() => { setFollowModal(null); navigate("user-profile", u.id); }} style={{ background: "none", border: "none", color: "#e8e0d4", fontSize: 14, flex: 1, textAlign: "left" }}>{u.name}</button>
+                          {followModal === "following" && (
+                            <button onClick={() => handleUnfollow(u.id)} style={{ background: "none", border: "1px solid #3a3028", color: "#5a5450", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>解除</button>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+          </>
         );
       })()}
 
@@ -1635,7 +1645,35 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, stores, n
           <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 2 }}>
             {myReviews.map(r => {
               const store = stores.find(s => s.id === r.storeId);
-              return <div key={r.id} onClick={() => navigate("store", r.storeId)} style={{ cursor: "pointer" }}><ReviewCard review={r} storeName={store?.name} currentUserType={currentUser.userType} navigate={navigate} /></div>;
+              return (
+                <div key={r.id} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "16px 20px" }}>
+                  {/* 店舗名ヘッダー */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <button onClick={() => navigate("store", r.storeId)} style={{ background: "none", border: "none", padding: 0, display: "flex", alignItems: "center", gap: 8, color: "#e8e0d4" }}>
+                      <span style={{ fontSize: 18 }}>{store?.image}</span>
+                      <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "0.04em" }}>{store?.name || "不明な店舗"}</span>
+                      <span style={{ fontSize: 11, color: "#5a5450" }}>{store?.area} / {store?.category}</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteReview(r.id)}
+                      style={{ background: "none", border: "1px solid #3a3028", color: "#5a5450", padding: "4px 10px", fontSize: 11, borderRadius: 2, flexShrink: 0 }}
+                    >削除</button>
+                  </div>
+                  {/* レビュー内容 */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, color: "#7a7268" }}>{r.date}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, background: "#1a1814", border: "1px solid #2a2620", color: "#7a7268", padding: "3px 8px", borderRadius: 2 }}>
+                      {{ low: "低い期待で訪問", normal: "普通の期待で訪問", high: "高い期待で訪問" }[r.preExpect]}
+                    </span>
+                    <span style={{ fontSize: 11, background: r.result === "Good" ? "#1abc9c22" : r.result === "Below" ? "#e74c3c22" : "#f39c1222", border: `1px solid ${r.result === "Good" ? "#1abc9c44" : r.result === "Below" ? "#e74c3c44" : "#f39c1244"}`, color: r.result === "Good" ? "#1abc9c" : r.result === "Below" ? "#e74c3c" : "#f39c12", padding: "3px 8px", borderRadius: 2 }}>
+                      {r.result}
+                    </span>
+                  </div>
+                  {r.comment && <p style={{ fontSize: 13, color: "#9a9090", lineHeight: 1.7 }}>{r.comment}</p>}
+                </div>
+              );
             })}
           </div>
         )}
@@ -1673,10 +1711,19 @@ function AdminPage({ navigate, currentUser, stores, setStores, reviews, users, n
 
   if (!currentUser?.isAdmin) { navigate("home"); return null; }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name) { notify("店舗名を入力してください", "error"); return; }
-    if (editingStore) { setStores(prev => prev.map(s => s.id === editingStore ? { ...s, ...form } : s)); notify("更新しました"); }
-    else { setStores(prev => [...prev, { ...form, id: Date.now() }]); notify("追加しました"); }
+    if (editingStore) {
+      const { error } = await supabase.from("stores").update({ name: form.name, category: form.category, area: form.area, price_range: form.priceRange, description: form.description, image: form.image }).eq("id", editingStore);
+      if (error) { notify("更新に失敗しました", "error"); return; }
+      setStores(prev => prev.map(s => s.id === editingStore ? { ...s, ...form } : s));
+      notify("更新しました");
+    } else {
+      const { data, error } = await supabase.from("stores").insert({ name: form.name, category: form.category, area: form.area, price_range: form.priceRange, description: form.description, image: form.image }).select().single();
+      if (error) { notify("追加に失敗しました", "error"); return; }
+      setStores(prev => [...prev, { id: data.id, name: data.name, category: data.category, area: data.area, priceRange: data.price_range, description: data.description, image: data.image }]);
+      notify("追加しました");
+    }
     setEditingStore(null); setForm({ name: "", category: "", area: "", priceRange: "¥¥", description: "", image: "🍽️" }); setTab("stores");
   };
 
@@ -1717,26 +1764,57 @@ function AdminPage({ navigate, currentUser, stores, setStores, reviews, users, n
         </div>
       )}
 
-      {tab === "edit" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            <FormSection label="店舗名" required><input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} style={inputStyle} /></FormSection>
-            <FormSection label="絵文字"><input value={form.image} onChange={e => setForm(p => ({ ...p, image: e.target.value }))} style={inputStyle} /></FormSection>
-            <FormSection label="カテゴリ"><input value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} style={inputStyle} /></FormSection>
-            <FormSection label="エリア"><input value={form.area} onChange={e => setForm(p => ({ ...p, area: e.target.value }))} style={inputStyle} /></FormSection>
-            <FormSection label="価格帯">
-              <select value={form.priceRange} onChange={e => setForm(p => ({ ...p, priceRange: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
-                {["¥","¥¥","¥¥¥","¥¥¥¥"].map(v => <option key={v} value={v}>{v}</option>)}
-              </select>
+      {tab === "edit" && (() => {
+        const CATEGORY_OPTIONS = [
+          { label: "鮨", icon: "🍣" }, { label: "和食・割烹", icon: "🍱" },
+          { label: "焼き鳥・鳥料理", icon: "🍗" }, { label: "フレンチ", icon: "🥂" },
+          { label: "イタリアン", icon: "🍝" }, { label: "中華", icon: "🥢" },
+          { label: "イノベーティブ", icon: "✨" }, { label: "焼肉・肉料理", icon: "🥩" },
+          { label: "天ぷら", icon: "🍤" }, { label: "スパニッシュ", icon: "🥘" },
+          { label: "アジア料理", icon: "🍜" }, { label: "デザート", icon: "🍮" },
+          { label: "バー", icon: "🍸" }, { label: "麺類", icon: "🍜" },
+          { label: "他和食", icon: "🍶" }, { label: "その他", icon: "🍽️" },
+        ];
+        const handleCategoryChange = (cat) => {
+          const found = CATEGORY_OPTIONS.find(c => c.label === cat);
+          setForm(p => ({ ...p, category: cat, image: found ? found.icon : p.image }));
+        };
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <FormSection label="店舗名" required>
+                <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} style={inputStyle} />
+              </FormSection>
+              <FormSection label="絵文字">
+                <select value={form.image} onChange={e => setForm(p => ({ ...p, image: e.target.value }))} style={{ ...inputStyle, cursor: "pointer", fontSize: 20 }}>
+                  {CATEGORY_OPTIONS.map(c => <option key={c.icon} value={c.icon}>{c.icon} {c.label}</option>)}
+                </select>
+              </FormSection>
+              <FormSection label="カテゴリ">
+                <select value={form.category} onChange={e => handleCategoryChange(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                  <option value="">選択してください</option>
+                  {CATEGORY_OPTIONS.map(c => <option key={c.label} value={c.label}>{c.icon} {c.label}</option>)}
+                </select>
+              </FormSection>
+              <FormSection label="エリア">
+                <input value={form.area} onChange={e => setForm(p => ({ ...p, area: e.target.value }))} placeholder="例：銀座・渋谷区" style={inputStyle} />
+              </FormSection>
+              <FormSection label="価格帯">
+                <select value={form.priceRange} onChange={e => setForm(p => ({ ...p, priceRange: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
+                  {["¥","¥¥","¥¥¥","¥¥¥¥"].map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </FormSection>
+            </div>
+            <FormSection label="説明">
+              <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} style={{ ...inputStyle, resize: "vertical" }} />
             </FormSection>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => { setEditingStore(null); setTab("stores"); }} style={{ flex: 1, background: "none", border: "1px solid #2a2620", color: "#9a9090", padding: "14px", fontSize: 13 }}>キャンセル</button>
+              <button onClick={handleSave} style={{ flex: 2, background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "14px", fontSize: 13, fontWeight: 600, borderRadius: 2 }}>{editingStore ? "更新する" : "追加する"}</button>
+            </div>
           </div>
-          <FormSection label="説明"><textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} style={{ ...inputStyle, resize: "vertical" }} /></FormSection>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => { setEditingStore(null); setTab("stores"); }} style={{ flex: 1, background: "none", border: "1px solid #2a2620", color: "#9a9090", padding: "14px", fontSize: 13 }}>キャンセル</button>
-            <button onClick={handleSave} style={{ flex: 2, background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "14px", fontSize: 13, fontWeight: 600, borderRadius: 2 }}>{editingStore ? "更新する" : "追加する"}</button>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {tab === "reviews" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -1866,21 +1944,11 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
   const toggleFollow = async () => {
     if (!currentUser) { navigate("login"); return; }
     if (isFollowing) {
-      await supabase.from("follows")
-        .delete()
-        .eq("follower_id", currentUser.id)
-        .eq("followee_id", targetUser.id);
-      setFollows(prev => ({
-        ...prev,
-        [currentUser.id]: (prev[currentUser.id] || []).filter(id => id !== targetUser.id),
-      }));
+      await supabase.from("follows").delete().eq("follower_id", currentUser.id).eq("followee_id", targetUser.id);
+      setFollows(prev => ({ ...prev, [currentUser.id]: (prev[currentUser.id] || []).filter(id => id !== targetUser.id) }));
     } else {
-      await supabase.from("follows")
-        .insert({ follower_id: currentUser.id, followee_id: targetUser.id });
-      setFollows(prev => ({
-        ...prev,
-        [currentUser.id]: [...(prev[currentUser.id] || []), targetUser.id],
-      }));
+      await supabase.from("follows").insert({ follower_id: currentUser.id, followee_id: targetUser.id });
+      setFollows(prev => ({ ...prev, [currentUser.id]: [...(prev[currentUser.id] || []), targetUser.id] }));
     }
   };
 
