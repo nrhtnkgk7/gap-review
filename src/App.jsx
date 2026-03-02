@@ -618,8 +618,16 @@ function scoreToDisplay(score, isSplit) {
   return                            { label: "BAD MATCH",      color: "#c0392b", tier: "bad"       };
 }
 
-function MatchBadge({ matchResult }) {
+function MatchBadge({ matchResult, compact }) {
   if (!matchResult) return null;
+  if (compact) {
+    const col = matchResult.score >= 70 ? "#1abc9c" : matchResult.score >= 50 ? "#f39c12" : matchResult.score < 0 ? "#e74c3c" : "#5a5450";
+    return (
+      <span style={{ fontSize: 10, color: col, background: col + "15", border: `1px solid ${col}33`, padding: "2px 7px", borderRadius: 20, letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+        {matchResult.label} {matchResult.score > 0 ? matchResult.score : ""}
+      </span>
+    );
+  }
   const { score, genre, confidence, sameTypeCount, isSplit } = matchResult;
 
   const { label, color, tier } = scoreToDisplay(score, isSplit);
@@ -1469,6 +1477,8 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
 function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReviews, stores, notify, follows, setFollows, users }) {
   if (!currentUser) { navigate("login"); return null; }
   const myReviews = reviews.filter(r => r.userId === currentUser.id);
+  const [reviewFilter, setReviewFilter] = useState("all");
+  const [followTab, setFollowTab] = useState(null);
 
   const handleDeleteReview = async (reviewId) => {
     if (!window.confirm("このレビューを削除しますか？")) return;
@@ -1477,126 +1487,104 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
     setReviews(prev => prev.filter(r => r.id !== reviewId));
     notify("レビューを削除しました");
   };
+
+  const handleShare = () => {
+    const url = `https://gap-review.com#user-profile/${currentUser.id}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => notify("URLをコピーしました"));
+    } else { notify("URLのコピーに失敗しました", "error"); }
+  };
+
   const ut = USER_TYPES[currentUser.userType];
   const visitedIds = new Set(myReviews.map(r => r.storeId));
   const recommended = stores
     .filter(s => !visitedIds.has(s.id))
     .map(s => ({ ...s, matchResult: calcMatchScore(s.id, currentUser, reviews, stores) }))
-    .filter(s => s.matchResult !== null && s.matchResult.score >= 60 && s.matchResult.score >= 0)
+    .filter(s => s.matchResult !== null && s.matchResult.score >= 60)
     .sort((a, b) => b.matchResult.score - a.matchResult.score)
     .slice(0, 4);
 
+  const myFollowingIds = follows[currentUser.id] || [];
+  const myFollowerIds = Object.entries(follows).filter(([, ids]) => ids.includes(currentUser.id)).map(([id]) => id);
+  const followingUsers = myFollowingIds.map(id => users.find(u => u.id === id)).filter(Boolean);
+  const followerUsers = myFollowerIds.map(id => users.find(u => u.id === id)).filter(Boolean);
+
+  const handleUnfollow = async (targetId) => {
+    await supabase.from("follows").delete().eq("follower_id", currentUser.id).eq("followee_id", targetId);
+    setFollows(prev => ({ ...prev, [currentUser.id]: (prev[currentUser.id] || []).filter(id => id !== targetId) }));
+  };
+
+  const gapKey = r => { const g = calcGap(r.preExpect, r.result); if (!g) return "match"; if (g.value > 0) return "beyond"; if (g.value < 0) return "below"; return "match"; };
+  const reviewCounts = { all: myReviews.length, beyond: myReviews.filter(r => gapKey(r) === "beyond").length, match: myReviews.filter(r => gapKey(r) === "match").length, below: myReviews.filter(r => gapKey(r) === "below").length };
+  const filteredReviews = reviewFilter === "all" ? myReviews : myReviews.filter(r => gapKey(r) === reviewFilter);
+
+  if (followTab) {
+    const listUsers = followTab === "following" ? followingUsers : followerUsers;
+    return (
+      <div className="fade-in" style={{ maxWidth: 700, margin: "0 auto", padding: "40px 16px" }}>
+        <button onClick={() => setFollowTab(null)} style={{ background: "none", border: "none", color: "#c9a96e", fontSize: 13, letterSpacing: "0.08em", marginBottom: 12 }}>← マイページへ</button>
+        <div style={{ borderTop: "1px solid #1e1c1a", paddingTop: 28, marginBottom: 4 }}>
+          <SectionLabel>{followTab === "following" ? "フォロー中" : "フォロワー"} ({listUsers.length})</SectionLabel>
+        </div>
+        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 2 }}>
+          {listUsers.length === 0 ? (
+            <p style={{ padding: 32, textAlign: "center", color: "#4a4440", fontSize: 13 }}>まだいません</p>
+          ) : listUsers.map(u => {
+            const uType = USER_TYPES[u.userType || u.user_type];
+            return (
+              <div key={u.id} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "14px 18px", display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 22 }}>{uType?.icon}</span>
+                <button onClick={() => { setFollowTab(null); navigate("user-profile", u.id); }} style={{ background: "none", border: "none", color: "#e8e0d4", fontSize: 14, flex: 1, textAlign: "left" }}>
+                  <span style={{ marginRight: 8 }}>{u.name}</span>
+                  <span style={{ fontSize: 11, color: uType?.color }}>{uType?.label}</span>
+                </button>
+                {followTab === "following" && (
+                  <button onClick={() => handleUnfollow(u.id)} style={{ background: "none", border: "1px solid #3a3028", color: "#5a5450", padding: "5px 12px", fontSize: 11, borderRadius: 2 }}>解除</button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fade-in" style={{ maxWidth: 700, margin: "0 auto", padding: "40px 16px" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 18, marginBottom: 36, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 18, marginBottom: 20, flexWrap: "wrap" }}>
         <div style={{ width: 58, height: 58, background: ut?.color + "22", border: `1px solid ${ut?.color}44`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{ut?.icon}</div>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 400, marginBottom: 5, letterSpacing: "0.04em" }}>{currentUser.name}</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5, flexWrap: "wrap" }}>
+            <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 400, letterSpacing: "0.04em" }}>{currentUser.name}</h1>
+            <button onClick={handleShare} style={{ background: "none", border: "1px solid #2a2620", color: "#5a5450", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>🔗 シェア</button>
+          </div>
           <p style={{ fontSize: 12, color: ut?.color, letterSpacing: "0.1em", marginBottom: 3 }}>{ut?.label}</p>
           <p style={{ fontSize: 12, color: "#5a5450" }}>{ut?.desc}</p>
         </div>
       </div>
 
-      {/* フォロー・フォロワー数 + モーダル */}
-      {(() => {
-        const myFollowingIds = follows[currentUser.id] || [];
-        const myFollowers = Object.entries(follows).filter(([, ids]) => ids.includes(currentUser.id)).map(([id]) => id);
-        const [followModal, setFollowModal] = useState(null); // "following" | "followers" | null
-
-        const handleUnfollow = async (targetId) => {
-          await supabase.from("follows").delete().eq("follower_id", currentUser.id).eq("followee_id", targetId);
-          setFollows(prev => ({ ...prev, [currentUser.id]: (prev[currentUser.id] || []).filter(id => id !== targetId) }));
-        };
-
-        const followingUsers = myFollowingIds.map(id => users.find(u => u.id === id)).filter(Boolean);
-        const followerUsers = myFollowers.map(id => users.find(u => u.id === id)).filter(Boolean);
-
-        return (
-          <>
-            <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
-              <button onClick={() => setFollowModal("following")} style={{ background: "none", border: "none", padding: 0, color: "#e8e0d4", textAlign: "left" }}>
-                <span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{myFollowingIds.length}</span>
-                <span style={{ fontSize: 11, color: "#5a5450", marginLeft: 5 }}>フォロー中</span>
-              </button>
-              <button onClick={() => setFollowModal("followers")} style={{ background: "none", border: "none", padding: 0, color: "#e8e0d4", textAlign: "left" }}>
-                <span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{myFollowers.length}</span>
-                <span style={{ fontSize: 11, color: "#5a5450", marginLeft: 5 }}>フォロワー</span>
-              </button>
-            </div>
-            {followModal && (
-              <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setFollowModal(null)}>
-                <div style={{ background: "#111012", border: "1px solid #2a2620", borderRadius: 6, width: "100%", maxWidth: 360, maxHeight: "70vh", overflow: "auto" }} onClick={e => e.stopPropagation()}>
-                  <div style={{ padding: "16px 20px", borderBottom: "1px solid #1e1c1a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <p style={{ fontSize: 14, letterSpacing: "0.1em" }}>{followModal === "following" ? "フォロー中" : "フォロワー"}</p>
-                    <button onClick={() => setFollowModal(null)} style={{ background: "none", border: "none", color: "#5a5450", fontSize: 18 }}>✕</button>
-                  </div>
-                  {(followModal === "following" ? followingUsers : followerUsers).length === 0 ? (
-                    <p style={{ padding: 24, textAlign: "center", color: "#5a5450", fontSize: 13 }}>まだいません</p>
-                  ) : (
-                    (followModal === "following" ? followingUsers : followerUsers).map(u => {
-                      const ut = USER_TYPES[u.userType || u.user_type];
-                      return (
-                        <div key={u.id} style={{ padding: "12px 20px", borderBottom: "1px solid #1a1814", display: "flex", alignItems: "center", gap: 12 }}>
-                          <span style={{ fontSize: 20 }}>{ut?.icon}</span>
-                          <button onClick={() => { setFollowModal(null); navigate("user-profile", u.id); }} style={{ background: "none", border: "none", color: "#e8e0d4", fontSize: 14, flex: 1, textAlign: "left" }}>{u.name}</button>
-                          {followModal === "following" && (
-                            <button onClick={() => handleUnfollow(u.id)} style={{ background: "none", border: "1px solid #3a3028", color: "#5a5450", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>解除</button>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
-          </>
-        );
-      })()}
+      <div style={{ display: "flex", gap: 20, marginBottom: 24 }}>
+        <button onClick={() => setFollowTab("following")} style={{ background: "none", border: "none", padding: 0, color: "#e8e0d4", textAlign: "left" }}>
+          <span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{myFollowingIds.length}</span>
+          <span style={{ fontSize: 11, color: "#5a5450", marginLeft: 5 }}>フォロー中</span>
+        </button>
+        <button onClick={() => setFollowTab("followers")} style={{ background: "none", border: "none", padding: 0, color: "#e8e0d4", textAlign: "left" }}>
+          <span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{myFollowerIds.length}</span>
+          <span style={{ fontSize: 11, color: "#5a5450", marginLeft: 5 }}>フォロワー</span>
+        </button>
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, marginBottom: 32 }}>
-        {[["投稿数", myReviews.length], ["ヒット体験", myReviews.filter(r => isHit(r)).length], ["乖離体験", myReviews.filter(r => r.result === "Below").length]].map(([l, v]) => (
-          <div key={l} style={{ background: "#111012", padding: "18px", textAlign: "center", border: "1px solid #1e1c1a" }}>
-            <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, color: "#c9a96e", marginBottom: 4 }}>{v}</p>
-            <p style={{ fontSize: 11, color: "#5a5450", letterSpacing: "0.1em" }}>{l}</p>
-          </div>
+        {[{ label: "投稿数", key: "all", value: reviewCounts.all }, { label: "ヒット体験", key: "beyond", value: reviewCounts.beyond }, { label: "乖離体験", key: "below", value: reviewCounts.below }].map(({ label, key, value }) => (
+          <button key={key} onClick={() => setReviewFilter(key)} style={{ background: reviewFilter === key ? "#1a1814" : "#111012", padding: "18px", textAlign: "center", border: `1px solid ${reviewFilter === key ? "#c9a96e44" : "#1e1c1a"}`, color: "#e8e0d4", cursor: "pointer" }}>
+            <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, color: "#c9a96e", marginBottom: 4 }}>{value}</p>
+            <p style={{ fontSize: 11, color: "#5a5450", letterSpacing: "0.1em" }}>{label}</p>
+          </button>
         ))}
       </div>
 
-      {/* ── ジャンル別マッチ傾向（Level1の核心） ── */}
       {(() => {
-        const genreMap = calcGenreAffinityMap(currentUser, reviews, stores);
-        if (!genreMap.length) return null;
-        return (
-          <div style={{ marginBottom: 36, background: "#111012", border: "1px solid #1e1c1a", borderRadius: 4, padding: "20px 24px" }}>
-            <p style={{ fontSize: 11, letterSpacing: "0.2em", color: "#4a4440", marginBottom: 16, textTransform: "uppercase" }}>ジャンル別マッチ傾向</p>
-            <p style={{ fontSize: 11, color: "#4a4440", marginBottom: 16, letterSpacing: "0.04em" }}>
-              あなたの味覚タイプが各ジャンルでどの程度合いやすいかのスコアです
-            </p>
-            {genreMap.map(g => {
-              const color = g.avgScore >= 75 ? "#1abc9c" : g.avgScore >= 50 ? "#f39c12" : "#e74c3c";
-              return (
-                <div key={g.genre} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                  <span style={{ fontSize: 12, color: "#7a7268", width: 72, flexShrink: 0 }}>{g.genre}</span>
-                  <div style={{ flex: 1, height: 5, background: "#1e1c1a", borderRadius: 3, overflow: "hidden" }}>
-                    <div style={{ width: `${g.avgScore}%`, height: "100%", background: color, borderRadius: 3, transition: "width 0.6s ease" }} />
-                  </div>
-                  <span style={{ fontSize: 12, color, width: 30, textAlign: "right", fontWeight: 600 }}>{g.avgScore}</span>
-                  <span style={{ fontSize: 10, color: "#3a3028", width: 28 }}>{g.storeCount}店</span>
-                </div>
-              );
-            })}
-          </div>
-        );
-      })()}
-
-      {/* ── フォロー中の新着口コミ ── */}
-      {(() => {
-        const followingIds = follows[currentUser.id] || [];
-        if (!followingIds.length) return null;
-        const feedReviews = reviews
-          .filter(r => followingIds.includes(r.userId))
-          .sort((a, b) => b.date.localeCompare(a.date))
-          .slice(0, 5);
+        const feedReviews = reviews.filter(r => myFollowingIds.includes(r.userId)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
         if (!feedReviews.length) return null;
         return (
           <div style={{ marginBottom: 36 }}>
@@ -1604,9 +1592,10 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
             <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 2 }}>
               {feedReviews.map(r => {
                 const store = stores.find(s => s.id === r.storeId);
+                const matchResult = store ? calcMatchScore(store.id, currentUser, reviews, stores) : null;
                 return (
                   <div key={r.id} onClick={() => navigate("store", r.storeId)} style={{ cursor: "pointer" }}>
-                    <ReviewCard review={r} storeName={store?.name} showStore currentUserType={currentUser.userType} navigate={navigate} />
+                    <ReviewCard review={r} storeName={store?.name} showStore currentUserType={currentUser.userType} navigate={navigate} matchResult={matchResult} />
                   </div>
                 );
               })}
@@ -1623,10 +1612,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
             {recommended.map(s => (
               <button key={s.id} onClick={() => navigate("store", s.id)} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", color: "#e8e0d4", width: "100%" }}>
                 <span style={{ fontSize: 24 }}>{s.image}</span>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 14, letterSpacing: "0.04em", marginBottom: 2 }}>{s.name}</p>
-                  <p style={{ fontSize: 12, color: "#5a5450" }}>{s.area} / {s.category}</p>
-                </div>
+                <div style={{ flex: 1 }}><p style={{ fontSize: 14, letterSpacing: "0.04em", marginBottom: 2 }}>{s.name}</p><p style={{ fontSize: 12, color: "#5a5450" }}>{s.area} / {s.category}</p></div>
                 <MatchBadge matchResult={s.matchResult} />
               </button>
             ))}
@@ -1642,40 +1628,38 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
             <button onClick={() => navigate("review-form")} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "12px 26px", fontSize: 13, fontWeight: 600 }}>最初のレビューを書く</button>
           </div>
         ) : (
-          <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 2 }}>
-            {myReviews.map(r => {
-              const store = stores.find(s => s.id === r.storeId);
-              return (
-                <div key={r.id} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "16px 20px" }}>
-                  {/* 店舗名ヘッダー */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                    <button onClick={() => navigate("store", r.storeId)} style={{ background: "none", border: "none", padding: 0, display: "flex", alignItems: "center", gap: 8, color: "#e8e0d4" }}>
-                      <span style={{ fontSize: 18 }}>{store?.image}</span>
-                      <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "0.04em" }}>{store?.name || "不明な店舗"}</span>
-                      <span style={{ fontSize: 11, color: "#5a5450" }}>{store?.area} / {store?.category}</span>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteReview(r.id)}
-                      style={{ background: "none", border: "1px solid #3a3028", color: "#5a5450", padding: "4px 10px", fontSize: 11, borderRadius: 2, flexShrink: 0 }}
-                    >削除</button>
-                  </div>
-                  {/* レビュー内容 */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <span style={{ fontSize: 11, color: "#7a7268" }}>{r.date}</span>
-                  </div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-                    <span style={{ fontSize: 11, background: "#1a1814", border: "1px solid #2a2620", color: "#7a7268", padding: "3px 8px", borderRadius: 2 }}>
-                      {{ low: "低い期待で訪問", normal: "普通の期待で訪問", high: "高い期待で訪問" }[r.preExpect]}
-                    </span>
-                    <span style={{ fontSize: 11, background: r.result === "Good" ? "#1abc9c22" : r.result === "Below" ? "#e74c3c22" : "#f39c1222", border: `1px solid ${r.result === "Good" ? "#1abc9c44" : r.result === "Below" ? "#e74c3c44" : "#f39c1244"}`, color: r.result === "Good" ? "#1abc9c" : r.result === "Below" ? "#e74c3c" : "#f39c12", padding: "3px 8px", borderRadius: 2 }}>
-                      {r.result}
-                    </span>
-                  </div>
-                  {r.comment && <p style={{ fontSize: 13, color: "#9a9090", lineHeight: 1.7 }}>{r.comment}</p>}
-                </div>
-              );
-            })}
-          </div>
+          <>
+            <div style={{ marginTop: 16 }}>
+              <ReviewFilterTabs filter={reviewFilter} setFilter={setReviewFilter} counts={reviewCounts} />
+            </div>
+            {filteredReviews.length === 0 ? (
+              <p style={{ padding: "24px 0", textAlign: "center", color: "#4a4440", fontSize: 13 }}>該当するレビューがありません</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {filteredReviews.map(r => {
+                  const store = stores.find(s => s.id === r.storeId);
+                  return (
+                    <div key={r.id} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "16px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                        <button onClick={() => navigate("store", r.storeId)} style={{ background: "none", border: "none", padding: 0, display: "flex", alignItems: "center", gap: 8, color: "#e8e0d4" }}>
+                          <span style={{ fontSize: 18 }}>{store?.image}</span>
+                          <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "0.04em" }}>{store?.name || "不明な店舗"}</span>
+                          <span style={{ fontSize: 11, color: "#5a5450" }}>{store?.area} / {store?.category}</span>
+                        </button>
+                        <button onClick={() => handleDeleteReview(r.id)} style={{ background: "none", border: "1px solid #3a3028", color: "#5a5450", padding: "4px 10px", fontSize: 11, borderRadius: 2, flexShrink: 0 }}>削除</button>
+                      </div>
+                      <div style={{ marginBottom: 8 }}><span style={{ fontSize: 11, color: "#7a7268" }}>{r.date}</span></div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                        <span style={{ fontSize: 11, background: "#1a1814", border: "1px solid #2a2620", color: "#7a7268", padding: "3px 8px", borderRadius: 2 }}>{{ low: "低い期待で訪問", normal: "普通の期待で訪問", high: "高い期待で訪問" }[r.preExpect]}</span>
+                        <span style={{ fontSize: 11, background: r.result === "Good" ? "#1abc9c22" : r.result === "Below" ? "#e74c3c22" : "#f39c1222", border: `1px solid ${r.result === "Good" ? "#1abc9c44" : r.result === "Below" ? "#e74c3c44" : "#f39c1244"}`, color: r.result === "Good" ? "#1abc9c" : r.result === "Below" ? "#e74c3c" : "#f39c12", padding: "3px 8px", borderRadius: 2 }}>{r.result}</span>
+                      </div>
+                      {r.comment && <p style={{ fontSize: 13, color: "#9a9090", lineHeight: 1.7 }}>{r.comment}</p>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -1844,6 +1828,30 @@ function AdminPage({ navigate, currentUser, stores, setStores, reviews, users, n
   );
 }
 
+// ── レビューフィルタタブ（共通）──────────────────────────────────────────────
+function ReviewFilterTabs({ filter, setFilter, counts }) {
+  const tabs = [
+    { key: "all",    label: "すべて", color: "#7a7268" },
+    { key: "beyond", label: "🚀 超越", color: "#1abc9c" },
+    { key: "match",  label: "✓ 一致",  color: "#f39c12" },
+    { key: "below",  label: "↓ 乖離",  color: "#e74c3c" },
+  ];
+  return (
+    <div style={{ display: "flex", gap: 2, marginBottom: 16, flexWrap: "wrap" }}>
+      {tabs.map(t => (
+        <button key={t.key} onClick={() => setFilter(t.key)} style={{
+          background: filter === t.key ? t.color + "22" : "#111012",
+          border: `1px solid ${filter === t.key ? t.color : "#1e1c1a"}`,
+          color: filter === t.key ? t.color : "#5a5450",
+          padding: "6px 14px", fontSize: 12, borderRadius: 2, transition: "all 0.15s",
+        }}>
+          {t.label}{counts && counts[t.key] !== undefined ? ` (${counts[t.key]})` : ""}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStores, precomputedResult }) {
   const stats = getGapStats(reviews);
   const matchResult = precomputedResult !== undefined
@@ -1891,7 +1899,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
   );
 }
 
-function ReviewCard({ review, storeName, showStore, currentUserType, navigate }) {
+function ReviewCard({ review, storeName, showStore, currentUserType, navigate, matchResult }) {
   const gap = calcGap(review.preExpect, review.result);
   const expectLabels = { low: "低い期待", normal: "普通の期待", high: "高い期待" };
   const ut = USER_TYPES[review.userType];
@@ -1911,9 +1919,12 @@ function ReviewCard({ review, storeName, showStore, currentUserType, navigate })
           </div>
           <p style={{ fontSize: 11, color: "#3a3028", marginTop: 3 }}>{review.date}</p>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <p style={{ fontSize: 16, color: gap.color }}>{gap.emoji}</p>
-          <p style={{ fontSize: 10, color: gap.color, letterSpacing: "0.1em" }}>{gap.label}</p>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+          <div style={{ textAlign: "right" }}>
+            <p style={{ fontSize: 16, color: gap.color }}>{gap.emoji}</p>
+            <p style={{ fontSize: 10, color: gap.color, letterSpacing: "0.1em" }}>{gap.label}</p>
+          </div>
+          {matchResult && <MatchBadge matchResult={matchResult} />}
         </div>
       </div>
       <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
@@ -1934,6 +1945,7 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
     </div>
   );
 
+  const [reviewFilter, setReviewFilter] = useState("all");
   const ut = USER_TYPES[targetUser.userType];
   const targetReviews = reviews.filter(r => r.userId === targetUser.id);
   const isMe = currentUser?.id === targetUser.id;
@@ -1969,6 +1981,11 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
     // 総合: タイプ親和度60% + 嗜好重複40%
     return Math.round((affinity * 0.6 + overlapRate * 0.4) * 100);
   })();
+
+  // レビューフィルタ
+  const gapKey = r => { const g = calcGap(r.preExpect, r.result); if (!g) return "match"; if (g.value > 0) return "beyond"; if (g.value < 0) return "below"; return "match"; };
+  const reviewCounts = { all: targetReviews.length, beyond: targetReviews.filter(r => gapKey(r) === "beyond").length, match: targetReviews.filter(r => gapKey(r) === "match").length, below: targetReviews.filter(r => gapKey(r) === "below").length };
+  const filteredTargetReviews = reviewFilter === "all" ? targetReviews : targetReviews.filter(r => gapKey(r) === reviewFilter);
 
   // よく行くエリア・ジャンル（上位3つ）
   const areaCounts = {}, genreCounts = {};
@@ -2058,13 +2075,20 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
         </div>
       )}
 
-      {/* ── 口コミ一覧（店舗カード形式・マッチ率付き） ── */}
+      {/* ── 口コミ一覧（フィルタ付き） ── */}
       <SectionLabel>口コミ ({targetReviews.length}件)</SectionLabel>
       {targetReviews.length === 0 ? (
         <p style={{ marginTop: 22, color: "#4a4440", fontSize: 14 }}>まだレビューがありません</p>
       ) : (
-        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-          {targetReviews
+        <>
+          <div style={{ marginTop: 16 }}>
+            <ReviewFilterTabs filter={reviewFilter} setFilter={setReviewFilter} counts={reviewCounts} />
+          </div>
+          {filteredTargetReviews.length === 0 ? (
+            <p style={{ padding: "20px 0", textAlign: "center", color: "#4a4440", fontSize: 13 }}>該当するレビューがありません</p>
+          ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {filteredTargetReviews
             .sort((a, b) => b.date.localeCompare(a.date))
             .map(r => {
               const store = stores.find(s => s.id === r.storeId);
@@ -2130,7 +2154,9 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
                 </button>
               );
             })}
-        </div>
+          </div>
+          )}
+        </>
       )}
     </div>
   );
