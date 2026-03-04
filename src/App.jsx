@@ -847,7 +847,123 @@ function NavBar({ navigate, currentUser, setCurrentUser, notify }) {
   );
 }
 
-function HomePage({ navigate, stores, reviews, currentUser }) {
+function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
+  // ── ログイン時: レコメンド × フォロー新着の混在フィード ──
+  if (currentUser) {
+    const myFollowingIds = follows?.[currentUser.id] || [];
+
+    // レコメンド店舗（未訪問・マッチ率60%以上）
+    const visitedIds = new Set(reviews.filter(r => r.userId === currentUser.id).map(r => r.storeId));
+    const recItems = stores
+      .filter(s => !visitedIds.has(s.id))
+      .map(s => ({ ...s, matchResult: calcMatchScore(s.id, currentUser, reviews, stores) }))
+      .filter(s => s.matchResult !== null && s.matchResult.score >= 60)
+      .sort((a, b) => b.matchResult.score - a.matchResult.score)
+      .slice(0, 10)
+      .map(s => ({ type: "recommend", data: s }));
+
+    // フォロー中の新着レビュー
+    const followItems = reviews
+      .filter(r => myFollowingIds.includes(r.userId))
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 10)
+      .map(r => ({ type: "follow", data: r }));
+
+    // 同タイプ・フォローしていないユーザーの新着（自分の投稿も除く）
+    const sameTypeItems = reviews
+      .filter(r =>
+        r.userType === currentUser.userType &&
+        r.userId !== currentUser.id &&
+        !myFollowingIds.includes(r.userId)
+      )
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 8)
+      .map(r => ({ type: "sametype", data: r }));
+
+    // 混在パターン: レコメンド→フォロー→レコメンド→同タイプ→（繰り返し）
+    const feed = [];
+    const recs = [...recItems];
+    const follows_ = [...followItems];
+    const sameTypes = [...sameTypeItems];
+    let cycle = 0;
+    while (recs.length > 0 || follows_.length > 0 || sameTypes.length > 0) {
+      const pattern = cycle % 3;
+      if (pattern === 0 && recs.length > 0) feed.push(recs.shift());
+      else if (pattern === 1 && follows_.length > 0) feed.push(follows_.shift());
+      else if (pattern === 2 && sameTypes.length > 0) feed.push(sameTypes.shift());
+      else {
+        if (recs.length > 0) feed.push(recs.shift());
+        else if (follows_.length > 0) feed.push(follows_.shift());
+        else if (sameTypes.length > 0) feed.push(sameTypes.shift());
+      }
+      cycle++;
+    }
+
+    const FeedLabel = ({ type }) => {
+      const config = {
+        recommend: { color: "#c9a96e", text: "✦ あなたへのレコメンド" },
+        follow:    { color: "#7a9acc", text: "● フォロー中の新着" },
+        sametype:  { color: "#9a7acc", text: "◈ 同じ味覚タイプの新着" },
+      };
+      const c = config[type] || config.follow;
+      return (
+        <p style={{
+          fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase",
+          color: c.color, marginBottom: 6, paddingLeft: 2,
+          fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic",
+        }}>{c.text}</p>
+      );
+    };
+
+    return (
+      <div className="fade-in" style={{ maxWidth: 700, margin: "0 auto", padding: "40px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
+          <SectionLabel>For You</SectionLabel>
+          <button onClick={() => navigate("review-form")} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "10px 22px", fontSize: 12, letterSpacing: "0.12em", fontWeight: 600, borderRadius: 2 }}>レビューを書く +</button>
+        </div>
+
+        {feed.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "80px 0", color: "#4a4440" }}>
+            <p style={{ fontSize: 36, marginBottom: 14 }}>🍽️</p>
+            <p style={{ fontSize: 14, marginBottom: 8 }}>フィードがまだありません</p>
+            <p style={{ fontSize: 12, color: "#3a3028", lineHeight: 1.9 }}>
+              ユーザーをフォローするか、<br />レビューを投稿するとフィードが充実します
+            </p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 24, flexWrap: "wrap" }}>
+              <button onClick={() => navigate("users")} style={{ background: "none", border: "1px solid #3a3028", color: "#c9a96e", padding: "10px 20px", fontSize: 12, borderRadius: 2 }}>ユーザーを探す</button>
+              <button onClick={() => navigate("search")} style={{ background: "none", border: "1px solid #3a3028", color: "#e8e0d4", padding: "10px 20px", fontSize: 12, borderRadius: 2 }}>店舗を探す</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {feed.map((item, i) => {
+              if (item.type === "recommend") {
+                const store = item.data;
+                return (
+                  <div key={"rec-" + store.id + "-" + i}>
+                    <FeedLabel type="recommend" />
+                    <StoreCard store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} currentUser={currentUser} allReviews={reviews} allStores={stores} precomputedResult={store.matchResult} />
+                  </div>
+                );
+              } else {
+                const r = item.data;
+                const store = stores.find(s => s.id === r.storeId);
+                const matchResult = store ? calcMatchScore(store.id, currentUser, reviews, stores) : null;
+                return (
+                  <div key={item.type + "-" + r.id + "-" + i} onClick={() => navigate("store", r.storeId)} style={{ cursor: "pointer" }}>
+                    <FeedLabel type={item.type} />
+                    <ReviewCard review={r} storeName={store?.name} showStore currentUserType={currentUser.userType} navigate={navigate} matchResult={matchResult} />
+                  </div>
+                );
+              }
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── 未ログイン時: ヒーロー + How It Works + 注目の店舗 ──
   return (
     <div className="fade-in">
       <div style={{ minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 20px", textAlign: "center", position: "relative" }}>
@@ -861,7 +977,7 @@ function HomePage({ navigate, stores, reviews, currentUser }) {
         </p>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
           <button onClick={() => navigate("search")} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "14px 32px", fontSize: 13, letterSpacing: "0.15em", fontWeight: 600 }}>店舗を探す</button>
-          <button onClick={() => navigate(currentUser ? "review-form" : "login")} style={{ background: "none", border: "1px solid #3a3028", color: "#e8e0d4", padding: "14px 32px", fontSize: 13, letterSpacing: "0.15em" }}>レビューを書く</button>
+          <button onClick={() => navigate("login")} style={{ background: "none", border: "1px solid #3a3028", color: "#e8e0d4", padding: "14px 32px", fontSize: 13, letterSpacing: "0.15em" }}>レビューを書く</button>
         </div>
       </div>
 
@@ -1740,26 +1856,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
         </div>
       )}
 
-      {(() => {
-        const feedReviews = reviews.filter(r => myFollowingIds.includes(r.userId)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
-        if (!feedReviews.length) return null;
-        return (
-          <div style={{ marginTop: 36 }}>
-            <SectionLabel>フォロー中の新着</SectionLabel>
-            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 2 }}>
-              {feedReviews.map(r => {
-                const store = stores.find(s => s.id === r.storeId);
-                const matchResult = store ? calcMatchScore(store.id, currentUser, reviews, stores) : null;
-                return (
-                  <div key={r.id} onClick={() => navigate("store", r.storeId)} style={{ cursor: "pointer" }}>
-                    <ReviewCard review={r} storeName={store?.name} showStore currentUserType={currentUser.userType} navigate={navigate} matchResult={matchResult} />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
+
     </div>
   );
 }
