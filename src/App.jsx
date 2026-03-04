@@ -827,7 +827,7 @@ function NavBar({ navigate, currentUser, setCurrentUser, notify }) {
   const logout = async () => { await supabase.auth.signOut(); setCurrentUser(null); notify("ログアウトしました"); navigate("home"); };
 
   return (
-    <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(250,248,245,0.97)", backdropFilter: "blur(12px)", borderBottom: "1px solid #1e1c1a", height: 64, display: "flex", alignItems: "center", padding: "0 16px", gap: 14 }}>
+    <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(250,248,245,0.97)", backdropFilter: "blur(12px)", borderBottom: "1px solid #c9a96e44", height: 64, display: "flex", alignItems: "center", padding: "0 16px", gap: 14 }}>
       <button onClick={() => navigate("home")} style={{ background: "none", border: "none", color: "#2c2420", fontSize: 16, fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>Gap Review</button>
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
         <button onClick={() => navigate("search")} style={{ background: "none", border: "none", color: "#8a8278", fontSize: 13 }}>店舗一覧</button>
@@ -837,7 +837,7 @@ function NavBar({ navigate, currentUser, setCurrentUser, notify }) {
             <button onClick={() => navigate("users")} style={{ background: "none", border: "none", color: "#8a8278", fontSize: 13 }}>ユーザー一覧</button>
             <button onClick={() => navigate("profile")} style={{ background: "none", border: "none", color: "#8a8278", fontSize: 13, maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser.name}</button>
             {currentUser.isAdmin && <button onClick={() => navigate("admin")} style={{ background: "none", border: "1px solid #c9a96e", color: "#c9a96e", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>管理</button>}
-            <button onClick={logout} style={{ background: "none", border: "1px solid #2a2620", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>ログアウト</button>
+            <button onClick={logout} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>ログアウト</button>
           </>
         ) : (
           <button onClick={() => navigate("login")} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", fontSize: 12, letterSpacing: "0.1em", padding: "8px 16px", borderRadius: 2, fontWeight: 600 }}>ログイン</button>
@@ -954,8 +954,8 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
               ユーザーをフォローするか、<br />レビューを投稿するとフィードが充実します
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 24, flexWrap: "wrap" }}>
-              <button onClick={() => navigate("users")} style={{ background: "none", border: "1px solid #3a3028", color: "#c9a96e", padding: "10px 20px", fontSize: 12, borderRadius: 2 }}>ユーザーを探す</button>
-              <button onClick={() => navigate("search")} style={{ background: "none", border: "1px solid #3a3028", color: "#2c2420", padding: "10px 20px", fontSize: 12, borderRadius: 2 }}>店舗を探す</button>
+              <button onClick={() => navigate("users")} style={{ background: "none", border: "1px solid #c9a96e44", color: "#c9a96e", padding: "10px 20px", fontSize: 12, borderRadius: 2 }}>ユーザーを探す</button>
+              <button onClick={() => navigate("search")} style={{ background: "none", border: "1px solid #c9a96e44", color: "#2c2420", padding: "10px 20px", fontSize: 12, borderRadius: 2 }}>店舗を探す</button>
             </div>
           </div>
         ) : (
@@ -1002,7 +1002,7 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
         </p>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
           <button onClick={() => navigate("search")} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "14px 32px", fontSize: 13, letterSpacing: "0.15em", fontWeight: 600 }}>店舗を探す</button>
-          <button onClick={() => navigate("login")} style={{ background: "none", border: "1px solid #3a3028", color: "#2c2420", padding: "14px 32px", fontSize: 13, letterSpacing: "0.15em" }}>レビューを書く</button>
+          <button onClick={() => navigate("login")} style={{ background: "none", border: "1px solid #c9a96e44", color: "#2c2420", padding: "14px 32px", fontSize: 13, letterSpacing: "0.15em" }}>レビューを書く</button>
         </div>
       </div>
 
@@ -1010,7 +1010,7 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
         <SectionLabel>こんなふうに使います</SectionLabel>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 2, marginTop: 28 }}>
           {[["01","訪問前に期待値を決める","行く前にどのくらい期待してる？を記録"],["02","食べたらひと言","期待以上？期待通り？ちょっと残念？の3択で報告"],["03","ズレが見える","期待とのズレが「期待以上・期待通り・ちょっと残念」で自動表示"]].map(([n,t,d]) => (
-            <div key={n} style={{ background: "#ffffff", padding: "28px 22px", borderLeft: "1px solid #1e1c1a" }}>
+            <div key={n} style={{ background: "#ffffff", padding: "28px 22px", borderLeft: "1px solid #c9a96e44" }}>
               <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 38, color: "#d8d0c4", fontWeight: 300, marginBottom: 12 }}>{n}</p>
               <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, letterSpacing: "0.06em" }}>{t}</h3>
               <p style={{ fontSize: 12, color: "#6a6258", lineHeight: 1.8, letterSpacing: "0.04em" }}>{d}</p>
@@ -1062,7 +1062,7 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
     <div className="fade-in" style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 16px" }}>
       <SectionLabel>店舗一覧</SectionLabel>
       {currentUser ? (
-        <div style={{ marginTop: 14, padding: "10px 14px", background: "#ffffff", border: "1px solid #1e1c1a", borderRadius: 3, display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ marginTop: 14, padding: "10px 14px", background: "#ffffff", border: "1px solid #c9a96e44", borderRadius: 3, display: "flex", alignItems: "center", gap: 8 }}>
           <span>{USER_TYPES[currentUser.userType]?.icon}</span>
           <p style={{ fontSize: 12, color: "#7a7268" }}>
             <span style={{ color: USER_TYPES[currentUser.userType]?.color }}>{USER_TYPES[currentUser.userType]?.label}</span> のあなたとの相性順に表示中
@@ -1091,11 +1091,11 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
         </button>
       )}
       <div style={{ marginTop: 18, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <input value={localQ} onChange={e => { setLocalQ(e.target.value); setSearchQ(e.target.value); }} placeholder="店名・エリア・カテゴリ..." style={{ flex: 1, minWidth: 150, background: "#f5f0e8", border: "1px solid #2a2620", borderRadius: 3, padding: "10px 14px", color: "#2c2420", outline: "none" }} />
-        <select value={filterCat} onChange={e => setFilterCat(e.target.value)} style={{ background: "#f5f0e8", border: "1px solid #2a2620", color: "#8a8278", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
+        <input value={localQ} onChange={e => { setLocalQ(e.target.value); setSearchQ(e.target.value); }} placeholder="店名・エリア・カテゴリ..." style={{ flex: 1, minWidth: 150, background: "#f5f0e8", border: "1px solid #c9a96e44", borderRadius: 3, padding: "10px 14px", color: "#2c2420", outline: "none" }} />
+        <select value={filterCat} onChange={e => setFilterCat(e.target.value)} style={{ background: "#f5f0e8", border: "1px solid #c9a96e44", color: "#8a8278", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
           {categories.map(c => <option key={c} value={c}>{c === "all" ? "全カテゴリ" : c}</option>)}
         </select>
-        <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: "#f5f0e8", border: "1px solid #2a2620", color: "#8a8278", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: "#f5f0e8", border: "1px solid #c9a96e44", color: "#8a8278", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
           {currentUser && <option value="match">相性順</option>}
           <option value="reviews">レビュー数順</option>
           <option value="newest">新店舗順</option>
@@ -1111,7 +1111,7 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
         <div style={{ textAlign: "center", padding: "80px 0", color: "#9a9088" }}>
           <p style={{ fontSize: 36, marginBottom: 14 }}>🔍</p>
           <p style={{ fontSize: 14, letterSpacing: "0.06em" }}>該当する店舗が見つかりません</p>
-          <button onClick={() => navigate("request-store")} style={{ marginTop: 18, background: "none", border: "1px solid #3a3028", color: "#c9a96e", padding: "10px 22px", fontSize: 12, letterSpacing: "0.1em", borderRadius: 2 }}>店舗を申請する</button>
+          <button onClick={() => navigate("request-store")} style={{ marginTop: 18, background: "none", border: "1px solid #c9a96e44", color: "#c9a96e", padding: "10px 22px", fontSize: 12, letterSpacing: "0.1em", borderRadius: 2 }}>店舗を申請する</button>
         </div>
       )}
     </div>
@@ -1181,8 +1181,8 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
           </>
         ) : !currentUser ? (
           <div style={{ display: "inline-flex", alignItems: "center", gap: 10,
-            background: "#f5f0e8", border: "1px dashed #2a2620", borderRadius: 3, padding: "10px 14px" }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", border: "2px dashed #2a2620",
+            background: "#f5f0e8", border: "1px dashed #c9a96e44", borderRadius: 3, padding: "10px 14px" }}>
+            <div style={{ width: 44, height: 44, borderRadius: "50%", border: "2px dashed #c9a96e44",
               display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <span style={{ fontSize: 18, color: "#c4b9ac" }}>?</span>
             </div>
@@ -1226,11 +1226,11 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
       </div>
 
       {stats && (
-        <div style={{ background: "#ffffff", border: "1px solid #1e1c1a", borderRadius: 4, padding: "22px 24px", marginBottom: 32 }}>
+        <div style={{ background: "#ffffff", border: "1px solid #c9a96e44", borderRadius: 4, padding: "22px 24px", marginBottom: 32 }}>
           <p style={{ fontSize: 11, letterSpacing: "0.2em", color: "#9a9088", marginBottom: 16, textTransform: "uppercase" }}>みんなの感想</p>
           <div style={{ display: "flex" }}>
             {[["期待以上！","#1abc9c",stats.beyond],["期待通り","#f39c12",stats.match],["ちょっと残念","#e74c3c",stats.below]].map(([label,color,count]) => (
-              <div key={label} style={{ flex: 1, textAlign: "center", padding: "12px 0", borderRight: "1px solid #1e1c1a" }}>
+              <div key={label} style={{ flex: 1, textAlign: "center", padding: "12px 0", borderRight: "1px solid #c9a96e44" }}>
                 <p style={{ fontSize: 24, fontFamily: "'Cormorant Garamond',serif", color, marginBottom: 4 }}>{count}</p>
                 <p style={{ fontSize: 11, color, letterSpacing: "0.1em" }}>{label}</p>
                 <p style={{ fontSize: 10, color: "#9a9088", marginTop: 3 }}>{Math.round(count / stats.total * 100)}%</p>
@@ -1377,7 +1377,7 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
       {gap && <p style={{ fontSize: 18, color: gap.color, letterSpacing: "0.1em", marginBottom: 28 }}>{gap.emoji} {gap.label}</p>}
       <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
         <button onClick={() => navigate("store", storeId)} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "12px 26px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>店舗ページへ</button>
-        <button onClick={() => { setSubmitted(false); setStoreId(""); setStoreQ(""); setPreExpect(""); setResult(""); setComment(""); }} style={{ background: "none", border: "1px solid #3a3028", color: "#2c2420", padding: "12px 26px", fontSize: 13 }}>続けて投稿</button>
+        <button onClick={() => { setSubmitted(false); setStoreId(""); setStoreQ(""); setPreExpect(""); setResult(""); setComment(""); }} style={{ background: "none", border: "1px solid #c9a96e44", color: "#2c2420", padding: "12px 26px", fontSize: 13 }}>続けて投稿</button>
       </div>
     </div>
   );
@@ -1399,11 +1399,11 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
             </div>
           ) : (
             <div style={{ position: "relative" }}>
-              <input value={storeQ} onChange={e => { setStoreQ(e.target.value); setShowSug(true); }} onFocus={() => setShowSug(true)} placeholder="店名・エリア・カテゴリで検索..." style={{ width: "100%", background: "#f5f0e8", border: "1px solid #2a2620", borderRadius: 3, padding: "12px 16px", color: "#2c2420", outline: "none" }} />
+              <input value={storeQ} onChange={e => { setStoreQ(e.target.value); setShowSug(true); }} onFocus={() => setShowSug(true)} placeholder="店名・エリア・カテゴリで検索..." style={{ width: "100%", background: "#f5f0e8", border: "1px solid #c9a96e44", borderRadius: 3, padding: "12px 16px", color: "#2c2420", outline: "none" }} />
               {showSug && suggestions.length > 0 && (
-                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#f5f0e8", border: "1px solid #2a2620", borderTop: "none", zIndex: 10 }}>
+                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#f5f0e8", border: "1px solid #c9a96e44", borderTop: "none", zIndex: 10 }}>
                   {suggestions.map(s => (
-                    <button key={s.id} onClick={() => { setStoreId(s.id); setStoreQ(s.name); setShowSug(false); }} style={{ width: "100%", background: "none", border: "none", padding: "12px 16px", color: "#2c2420", textAlign: "left", display: "flex", gap: 10, alignItems: "center", borderBottom: "1px solid #1e1c1a" }}>
+                    <button key={s.id} onClick={() => { setStoreId(s.id); setStoreQ(s.name); setShowSug(false); }} style={{ width: "100%", background: "none", border: "none", padding: "12px 16px", color: "#2c2420", textAlign: "left", display: "flex", gap: 10, alignItems: "center", borderBottom: "1px solid #c9a96e44" }}>
                       <span>{s.image}</span><span style={{ fontSize: 14 }}>{s.name}</span><span style={{ color: "#7a7268", marginLeft: "auto", fontSize: 11 }}>{s.area}</span>
                     </button>
                   ))}
@@ -1441,7 +1441,7 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
         )}
 
         <FormSection label="コメント（任意）">
-          <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="体験についての自由なコメント..." rows={4} style={{ width: "100%", background: "#f5f0e8", border: "1px solid #2a2620", borderRadius: 3, padding: "12px 16px", color: "#2c2420", resize: "vertical", outline: "none", lineHeight: 1.7 }} />
+          <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="体験についての自由なコメント..." rows={4} style={{ width: "100%", background: "#f5f0e8", border: "1px solid #c9a96e44", borderRadius: 3, padding: "12px 16px", color: "#2c2420", resize: "vertical", outline: "none", lineHeight: 1.7 }} />
         </FormSection>
 
         <button onClick={handleSubmit} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "16px", fontSize: 14, letterSpacing: "0.15em", fontWeight: 600, borderRadius: 2 }}>投稿する</button>
@@ -1582,7 +1582,7 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
             </div>
           )}
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => setStep(1)} style={{ flex: 1, background: "none", border: "1px solid #2a2620", color: "#8a8278", padding: "14px", fontSize: 14 }}>← 戻る</button>
+            <button onClick={() => setStep(1)} style={{ flex: 1, background: "none", border: "1px solid #c9a96e44", color: "#8a8278", padding: "14px", fontSize: 14 }}>← 戻る</button>
             <button onClick={handleRegister} disabled={isSubmitting} style={{ flex: 2, background: "#c9a96e", border: "none", color: "#faf8f5", padding: "14px", fontSize: 14, letterSpacing: "0.12em", fontWeight: 600, borderRadius: 2, opacity: isSubmitting ? 0.7 : 1 }}>{isSubmitting ? "登録中..." : "登録する"}</button>
           </div>
         </div>
@@ -1636,7 +1636,7 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
                       <button
                         key={cat}
                         onClick={() => navigate("review-form")}
-                        style={{ background: "#f5f0e8", border: "1px solid #2a2620", color: "#8a8278", padding: "6px 14px", fontSize: 12, borderRadius: 20, letterSpacing: "0.06em" }}
+                        style={{ background: "#f5f0e8", border: "1px solid #c9a96e44", color: "#8a8278", padding: "6px 14px", fontSize: 12, borderRadius: 20, letterSpacing: "0.06em" }}
                       >
                         {catStore?.image} {cat}
                       </button>
@@ -1725,7 +1725,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
     return (
       <div className="fade-in" style={{ maxWidth: 700, margin: "0 auto", padding: "40px 16px" }}>
         <button onClick={() => setFollowTab(null)} style={{ background: "none", border: "none", color: "#c9a96e", fontSize: 13, letterSpacing: "0.08em", marginBottom: 12 }}>← マイページへ</button>
-        <div style={{ borderTop: "1px solid #1e1c1a", paddingTop: 28, marginBottom: 4 }}>
+        <div style={{ borderTop: "1px solid #c9a96e44", paddingTop: 28, marginBottom: 4 }}>
           <SectionLabel>{followTab === "following" ? "フォロー中" : "フォロワー"} ({listUsers.length})</SectionLabel>
         </div>
         <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -1734,14 +1734,14 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
           ) : listUsers.map(u => {
             const uType = USER_TYPES[u.userType || u.user_type];
             return (
-              <div key={u.id} style={{ background: "#ffffff", border: "1px solid #1e1c1a", padding: "14px 18px", display: "flex", alignItems: "center", gap: 12 }}>
+              <div key={u.id} style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "14px 18px", display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ fontSize: 22 }}>{uType?.icon}</span>
                 <button onClick={() => { setFollowTab(null); navigate("user-profile", u.id); }} style={{ background: "none", border: "none", color: "#2c2420", fontSize: 14, flex: 1, textAlign: "left" }}>
                   <span style={{ marginRight: 8 }}>{u.name}</span>
                   <span style={{ fontSize: 11, color: uType?.color }}>{uType?.label}</span>
                 </button>
                 {followTab === "following" && (
-                  <button onClick={() => handleUnfollow(u.id)} style={{ background: "none", border: "1px solid #3a3028", color: "#7a7268", padding: "5px 12px", fontSize: 11, borderRadius: 2 }}>解除</button>
+                  <button onClick={() => handleUnfollow(u.id)} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "5px 12px", fontSize: 11, borderRadius: 2 }}>解除</button>
                 )}
               </div>
             );
@@ -1792,7 +1792,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
                 ) : null;
               })()}
               <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={() => { setIsEditing(false); setEditName(currentUser.name); setEditAxis1(currentUser.userType?.[0] || ""); setEditAxis2(currentUser.userType?.[1] || ""); }} style={{ flex: 1, background: "none", border: "1px solid #2a2620", color: "#8a8278", padding: "12px", fontSize: 12, borderRadius: 2 }}>キャンセル</button>
+                <button onClick={() => { setIsEditing(false); setEditName(currentUser.name); setEditAxis1(currentUser.userType?.[0] || ""); setEditAxis2(currentUser.userType?.[1] || ""); }} style={{ flex: 1, background: "none", border: "1px solid #c9a96e44", color: "#8a8278", padding: "12px", fontSize: 12, borderRadius: 2 }}>キャンセル</button>
                 <button onClick={handleSaveProfile} style={{ flex: 2, background: "#c9a96e", border: "none", color: "#faf8f5", padding: "12px", fontSize: 12, fontWeight: 600, borderRadius: 2 }}>保存する</button>
               </div>
             </div>
@@ -1800,8 +1800,8 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5, flexWrap: "wrap" }}>
                 <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 400, letterSpacing: "0.04em" }}>{currentUser.name}</h1>
-                <button onClick={() => setIsEditing(true)} style={{ background: "none", border: "1px solid #2a2620", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>✏️ 編集</button>
-                <button onClick={handleShare} style={{ background: "none", border: "1px solid #2a2620", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>🔗 シェア</button>
+                <button onClick={() => setIsEditing(true)} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>✏️ 編集</button>
+                <button onClick={handleShare} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>🔗 シェア</button>
               </div>
               <p style={{ fontSize: 12, color: ut?.color, letterSpacing: "0.1em", marginBottom: 3 }}>{ut?.label}</p>
               <p style={{ fontSize: 12, color: "#7a7268" }}>{ut?.desc}</p>
@@ -1849,18 +1849,18 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
                 {filteredReviews.map(r => {
                   const store = stores.find(s => s.id === r.storeId);
                   return (
-                    <div key={r.id} style={{ background: "#ffffff", border: "1px solid #1e1c1a", padding: "16px 20px" }}>
+                    <div key={r.id} style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "16px 20px" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <button onClick={() => navigate("store", r.storeId)} style={{ background: "none", border: "none", padding: 0, display: "flex", alignItems: "center", gap: 8, color: "#2c2420" }}>
                           <span style={{ fontSize: 18 }}>{store?.image}</span>
                           <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "0.04em" }}>{store?.name || "不明な店舗"}</span>
                           <span style={{ fontSize: 11, color: "#7a7268" }}>{store?.area} / {store?.category}</span>
                         </button>
-                        <button onClick={() => handleDeleteReview(r.id)} style={{ background: "none", border: "1px solid #3a3028", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2, flexShrink: 0 }}>削除</button>
+                        <button onClick={() => handleDeleteReview(r.id)} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2, flexShrink: 0 }}>削除</button>
                       </div>
                       <div style={{ marginBottom: 8 }}><span style={{ fontSize: 11, color: "#7a7268" }}>{r.date}</span></div>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, background: "#f5f0e8", border: "1px solid #2a2620", color: "#7a7268", padding: "3px 8px", borderRadius: 2 }}>{{ low: "あまり期待せずに訪問", normal: "普通の期待で訪問", high: "かなり期待して訪問" }[r.preExpect]}</span>
+                        <span style={{ fontSize: 11, background: "#f5f0e8", border: "1px solid #c9a96e44", color: "#7a7268", padding: "3px 8px", borderRadius: 2 }}>{{ low: "あまり期待せずに訪問", normal: "普通の期待で訪問", high: "かなり期待して訪問" }[r.preExpect]}</span>
                         <span style={{ fontSize: 11, background: r.result === "Good" ? "#1abc9c22" : r.result === "Below" ? "#e74c3c22" : "#f39c1222", border: `1px solid ${r.result === "Good" ? "#1abc9c44" : r.result === "Below" ? "#e74c3c44" : "#f39c1244"}`, color: r.result === "Good" ? "#1abc9c" : r.result === "Below" ? "#e74c3c" : "#f39c12", padding: "3px 8px", borderRadius: 2 }}>{r.result}</span>
                       </div>
                       {r.comment && <p style={{ fontSize: 13, color: "#8a8278", lineHeight: 1.7 }}>{r.comment}</p>}
@@ -1879,7 +1879,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
           <p style={{ fontSize: 12, color: "#7a7268", marginTop: 6, marginBottom: 16 }}>{ut?.label} タイプで相性よさそう・まだ行ってないお店</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {recommended.map(s => (
-              <button key={s.id} onClick={() => navigate("store", s.id)} style={{ background: "#ffffff", border: "1px solid #1e1c1a", padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", color: "#2c2420", width: "100%" }}>
+              <button key={s.id} onClick={() => navigate("store", s.id)} style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", color: "#2c2420", width: "100%" }}>
                 <span style={{ fontSize: 24 }}>{s.image}</span>
                 <div style={{ flex: 1 }}><p style={{ fontSize: 14, letterSpacing: "0.04em", marginBottom: 2 }}>{s.name}</p><p style={{ fontSize: 12, color: "#7a7268" }}>{s.area} / {s.category}</p></div>
                 <MatchBadge matchResult={s.matchResult} />
@@ -1941,8 +1941,8 @@ function UsersPage({ navigate, currentUser, users, reviews, stores, follows }) {
       </p>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-        <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="ユーザー名で検索..." style={{ flex: 1, minWidth: 150, background: "#f5f0e8", border: "1px solid #2a2620", borderRadius: 3, padding: "10px 14px", color: "#2c2420", outline: "none" }} />
-        <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: "#f5f0e8", border: "1px solid #2a2620", color: "#8a8278", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
+        <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="ユーザー名で検索..." style={{ flex: 1, minWidth: 150, background: "#f5f0e8", border: "1px solid #c9a96e44", borderRadius: 3, padding: "10px 14px", color: "#2c2420", outline: "none" }} />
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: "#f5f0e8", border: "1px solid #c9a96e44", color: "#8a8278", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
           <option value="match">相性が高い順</option>
           <option value="reviews">レビュー数順</option>
           <option value="recent">最新レビュー順</option>
@@ -1955,7 +1955,7 @@ function UsersPage({ navigate, currentUser, users, reviews, stores, follows }) {
         {sorted.map(u => {
           const matchColor = u.tasteMatch >= 70 ? "#1abc9c" : u.tasteMatch >= 50 ? "#f39c12" : "#7a7268";
           return (
-            <button key={u.id} onClick={() => navigate("user-profile", u.id)} style={{ background: "#ffffff", border: "1px solid #1e1c1a", padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", color: "#2c2420", width: "100%" }}>
+            <button key={u.id} onClick={() => navigate("user-profile", u.id)} style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", color: "#2c2420", width: "100%" }}>
               <div style={{ width: 42, height: 42, background: (u.ut?.color || "#7a7268") + "22", border: `1px solid ${(u.ut?.color || "#7a7268")}44`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{u.ut?.icon || "👤"}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -2075,7 +2075,7 @@ function AddStorePage({ navigate, currentUser, stores, setStores, notify }) {
           <textarea value={form.description} onChange={e => update("description", e.target.value)} rows={3} placeholder="お店の特徴を簡潔に記載してください" style={{ ...inputStyle, resize: "vertical" }} />
         </FormSection>
         {allFilled && (
-          <div style={{ background: "#ffffff", border: "1px solid #1e1c1a", borderRadius: 3, padding: "16px" }}>
+          <div style={{ background: "#ffffff", border: "1px solid #c9a96e44", borderRadius: 3, padding: "16px" }}>
             <p style={{ fontSize: 10, color: "#7a7268", letterSpacing: "0.15em", marginBottom: 10, textTransform: "uppercase" }}>プレビュー</p>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ fontSize: 28 }}>{form.image}</span>
@@ -2151,7 +2151,7 @@ function AdminPage({ navigate, currentUser, stores, setStores, reviews, setRevie
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, marginBottom: 32 }}>
         {[["登録店舗数",stores.length],["総レビュー数",reviews.length],["登録ユーザー数",users.length]].map(([l,v]) => (
-          <div key={l} style={{ background: "#ffffff", padding: "16px", textAlign: "center", border: "1px solid #1e1c1a" }}>
+          <div key={l} style={{ background: "#ffffff", padding: "16px", textAlign: "center", border: "1px solid #c9a96e44" }}>
             <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#c9a96e" }}>{v}</p>
             <p style={{ fontSize: 11, color: "#7a7268", marginTop: 3 }}>{l}</p>
           </div>
@@ -2159,21 +2159,21 @@ function AdminPage({ navigate, currentUser, stores, setStores, reviews, setRevie
       </div>
       <div style={{ display: "flex", gap: 2, marginBottom: 22, flexWrap: "wrap" }}>
         {[["stores","店舗管理"],["edit",editingStore?"店舗を編集":"店舗を追加"],["reviews","レビュー一覧"],["users","ユーザー"]].map(([key,label]) => (
-          <button key={key} onClick={() => setTab(key)} style={{ background: tab === key ? "#c9a96e" : "#ffffff", border: "1px solid #1e1c1a", color: tab === key ? "#faf8f5" : "#7a7268", padding: "10px 16px", fontSize: 12, fontWeight: tab === key ? 600 : 400, transition: "all 0.2s" }}>{label}</button>
+          <button key={key} onClick={() => setTab(key)} style={{ background: tab === key ? "#c9a96e" : "#ffffff", border: "1px solid #c9a96e44", color: tab === key ? "#faf8f5" : "#7a7268", padding: "10px 16px", fontSize: 12, fontWeight: tab === key ? 600 : 400, transition: "all 0.2s" }}>{label}</button>
         ))}
       </div>
 
       {tab === "stores" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {stores.map(store => (
-            <div key={store.id} style={{ background: "#ffffff", border: "1px solid #1e1c1a", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div key={store.id} style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <span style={{ fontSize: 20 }}>{store.image}</span>
               <div style={{ flex: 1, minWidth: 140 }}>
                 <p style={{ fontSize: 13 }}>{store.name}</p>
                 <p style={{ fontSize: 11, color: "#7a7268" }}>{store.area} / {store.category} / {store.priceRange}</p>
               </div>
               <p style={{ fontSize: 11, color: "#7a7268" }}>{reviews.filter(r => r.storeId === store.id).length}件</p>
-              <button onClick={() => { setEditingStore(store.id); setForm({ name: store.name, category: store.category, area: store.area, priceRange: store.priceRange, description: store.description, image: store.image }); setTab("edit"); }} style={{ background: "none", border: "1px solid #3a3028", color: "#8a8278", padding: "5px 12px", fontSize: 11, borderRadius: 2 }}>編集</button>
+              <button onClick={() => { setEditingStore(store.id); setForm({ name: store.name, category: store.category, area: store.area, priceRange: store.priceRange, description: store.description, image: store.image }); setTab("edit"); }} style={{ background: "none", border: "1px solid #c9a96e44", color: "#8a8278", padding: "5px 12px", fontSize: 11, borderRadius: 2 }}>編集</button>
               <button onClick={async () => {
                 if (!window.confirm(`「${store.name}」を削除しますか？`)) return;
                 const { error } = await supabase.from("stores").delete().eq("id", store.id);
@@ -2232,7 +2232,7 @@ function AdminPage({ navigate, currentUser, stores, setStores, reviews, setRevie
               <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} style={{ ...inputStyle, resize: "vertical" }} />
             </FormSection>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => { setEditingStore(null); setTab("stores"); }} style={{ flex: 1, background: "none", border: "1px solid #2a2620", color: "#8a8278", padding: "14px", fontSize: 13 }}>キャンセル</button>
+              <button onClick={() => { setEditingStore(null); setTab("stores"); }} style={{ flex: 1, background: "none", border: "1px solid #c9a96e44", color: "#8a8278", padding: "14px", fontSize: 13 }}>キャンセル</button>
               <button onClick={handleSave} style={{ flex: 2, background: "#c9a96e", border: "none", color: "#faf8f5", padding: "14px", fontSize: 13, fontWeight: 600, borderRadius: 2 }}>{editingStore ? "更新する" : "追加する"}</button>
             </div>
           </div>
@@ -2256,7 +2256,7 @@ function AdminPage({ navigate, currentUser, stores, setStores, reviews, setRevie
           {users.map(u => {
             const ut = USER_TYPES[u.userType];
             return (
-              <div key={u.id} style={{ background: "#ffffff", border: "1px solid #1e1c1a", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <div key={u.id} style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 20 }}>{ut?.icon || "👤"}</span>
                 <div style={{ flex: 1, minWidth: 140 }}>
                   <p style={{ fontSize: 13 }}>{u.name} {u.isAdmin && <span style={{ fontSize: 10, color: "#c9a96e", marginLeft: 8, border: "1px solid #c9a96e44", padding: "1px 6px" }}>admin</span>}</p>
@@ -2303,7 +2303,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
     ? precomputedResult
     : (currentUser && allReviews && allStores ? calcMatchScore(store.id, currentUser, allReviews, allStores) : null);
   return (
-    <button onClick={() => navigate("store", store.id)} className="hover-lift" style={{ background: "#ffffff", border: "1px solid #1e1c1a", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 3, width: "100%" }}>
+    <button onClick={() => navigate("store", store.id)} className="hover-lift" style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 3, width: "100%" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
         <span style={{ fontSize: 30 }}>{store.image}</span>
         <div style={{ flex: 1 }}>
@@ -2318,9 +2318,9 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
           ? (matchResult && <MatchBadge matchResult={matchResult} />)
           : (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8,
-              background: "#f5f0e8", border: "1px dashed #2a2620", borderRadius: 3, padding: "6px 10px",
+              background: "#f5f0e8", border: "1px dashed #c9a96e44", borderRadius: 3, padding: "6px 10px",
               width: "100%" }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2px dashed #2a2620",
+              <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2px dashed #c9a96e44",
                 display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <span style={{ fontSize: 14, color: "#c4b9ac" }}>?</span>
               </div>
@@ -2378,7 +2378,7 @@ function ReviewCard({ review, storeName, showStore, currentUserType, navigate, m
       </div>
       {review.comment && <p style={{ fontSize: 13, color: "#7a7268", lineHeight: 1.8 }}>{review.comment}</p>}
       {isAdmin && onAdminDelete && (
-        <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #1e1c1a", textAlign: "right" }}>
+        <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #c9a96e44", textAlign: "right" }}>
           <button onClick={(e) => { e.stopPropagation(); onAdminDelete(review.id); }} style={{ background: "none", border: "1px solid #4a2020", color: "#e74c3c", padding: "3px 10px", fontSize: 10, borderRadius: 2 }}>🗑 管理者削除</button>
         </div>
       )}
@@ -2485,7 +2485,7 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
 
       {/* ── 自分との相性 ── */}
       {affinityScore !== null && (
-        <div style={{ background: "#ffffff", border: "1px solid #1e1c1a", borderRadius: 4, padding: "16px 20px", marginBottom: 20 }}>
+        <div style={{ background: "#ffffff", border: "1px solid #c9a96e44", borderRadius: 4, padding: "16px 20px", marginBottom: 20 }}>
           <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#9a9088", marginBottom: 10, textTransform: "uppercase" }}>あなたとの相性</p>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ position: "relative", width: 48, height: 48, flexShrink: 0 }}>
@@ -2512,7 +2512,7 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
 
       {/* ── よく行くエリア・ジャンル ── */}
       {targetReviews.length > 0 && (
-        <div style={{ background: "#ffffff", border: "1px solid #1e1c1a", borderRadius: 4, padding: "16px 20px", marginBottom: 24 }}>
+        <div style={{ background: "#ffffff", border: "1px solid #c9a96e44", borderRadius: 4, padding: "16px 20px", marginBottom: 24 }}>
           <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#9a9088", marginBottom: 12, textTransform: "uppercase" }}>よく行くエリア・ジャンル</p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {topAreas.map(a => (
@@ -2552,7 +2552,7 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
                 : null;
               return (
                 <button key={r.id} onClick={() => navigate("store", store.id)}
-                  style={{ background: "#ffffff", border: "1px solid #1e1c1a", borderRadius: 3,
+                  style={{ background: "#ffffff", border: "1px solid #c9a96e44", borderRadius: 3,
                     padding: "16px", textAlign: "left", color: "#2c2420", width: "100%" }}>
 
                   {/* 上段: 店舗情報 + マッチバッジ */}
@@ -2568,10 +2568,10 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
                       ? (matchResult && <MatchBadge matchResult={matchResult} />)
                       : (
                         <div style={{ display: "inline-flex", alignItems: "center", gap: 8,
-                          background: "#f5f0e8", border: "1px solid #2a2620",
+                          background: "#f5f0e8", border: "1px solid #c9a96e44",
                           borderRadius: 3, padding: "5px 10px" }}>
                           <div style={{ width: 34, height: 34, borderRadius: "50%",
-                            border: "2px dashed #2a2620", display: "flex", alignItems: "center",
+                            border: "2px dashed #c9a96e44", display: "flex", alignItems: "center",
                             justifyContent: "center", flexShrink: 0 }}>
                             <span style={{ fontSize: 14, color: "#c4b9ac" }}>?</span>
                           </div>
@@ -2614,7 +2614,7 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
 
 
 function SectionLabel({ children }) {
-  return <p style={{ fontSize: 11, letterSpacing: "0.25em", color: "#c9a96e", textTransform: "uppercase", fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", borderBottom: "1px solid #1e1c1a", paddingBottom: 10, display: "inline-block" }}>{children}</p>;
+  return <p style={{ fontSize: 11, letterSpacing: "0.25em", color: "#c9a96e", textTransform: "uppercase", fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", borderBottom: "1px solid #c9a96e44", paddingBottom: 10, display: "inline-block" }}>{children}</p>;
 }
 
 function FormSection({ label, required, children }) {
