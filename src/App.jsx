@@ -1049,6 +1049,12 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
     .sort((a, b) => {
       if (sortBy === "match" && currentUser) return ((b.matchResult?.score) ?? 0) - ((a.matchResult?.score) ?? 0);
       if (sortBy === "reviews") return b.reviewCount - a.reviewCount;
+      if (sortBy === "newest") return b.id - a.id;
+      if (sortBy === "latest-review") {
+        const bLatest = reviews.filter(r => r.storeId === b.id).sort((x,y) => y.date.localeCompare(x.date))[0]?.date || "";
+        const aLatest = reviews.filter(r => r.storeId === a.id).sort((x,y) => y.date.localeCompare(x.date))[0]?.date || "";
+        return bLatest.localeCompare(aLatest);
+      }
       return a.name.localeCompare(b.name, "ja");
     });
 
@@ -1092,6 +1098,8 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
         <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: "#1a1814", border: "1px solid #2a2620", color: "#9a9090", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
           {currentUser && <option value="match">マッチ率順</option>}
           <option value="reviews">レビュー数順</option>
+          <option value="newest">新店舗順</option>
+          <option value="latest-review">新口コミ順</option>
           <option value="name">名前順</option>
         </select>
       </div>
