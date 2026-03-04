@@ -815,6 +815,7 @@ export default function App() {
         {page === "profile" && <ProfilePage {...props} setReviews={setReviews} setFollows={setFollows} />}
         {page === "request-store" && <RequestStorePage {...props} />}
         {page === "add-store" && <AddStorePage {...props} />}
+        {page === "users" && <UsersPage {...props} />}
         {page === "admin" && <AdminPage {...props} />}
         {page === "user-profile" && <UserProfilePage {...props} />}
       </div>
@@ -833,6 +834,7 @@ function NavBar({ navigate, currentUser, setCurrentUser, notify }) {
         {currentUser ? (
           <>
             <button onClick={() => navigate("add-store")} style={{ background: "none", border: "none", color: "#9a9090", fontSize: 13 }}>店舗追加</button>
+            <button onClick={() => navigate("users")} style={{ background: "none", border: "none", color: "#9a9090", fontSize: 13 }}>ユーザー</button>
             <button onClick={() => navigate("profile")} style={{ background: "none", border: "none", color: "#9a9090", fontSize: 13, maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser.name}</button>
             {currentUser.isAdmin && <button onClick={() => navigate("admin")} style={{ background: "none", border: "1px solid #c9a96e", color: "#c9a96e", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>管理</button>}
             <button onClick={logout} style={{ background: "none", border: "1px solid #2a2620", color: "#5a5450", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>ログアウト</button>
@@ -1743,6 +1745,101 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── UsersPage: ユーザー一覧ページ ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+function UsersPage({ navigate, currentUser, users, reviews, stores, follows }) {
+  if (!currentUser) { navigate("login"); return null; }
+
+  const [searchQ, setSearchQ] = useState("");
+  const [sortBy, setSortBy] = useState("match");
+
+  const usersWithStats = users.filter(u => u.id !== currentUser.id).map(u => {
+    const ut = USER_TYPES[u.userType || u.user_type];
+    const affinity = typeAffinity(currentUser.userType, u.userType || u.user_type);
+    const myHitStoreIds = new Set(reviews.filter(r => r.userId === currentUser.id && isHit(r)).map(r => r.storeId));
+    const theirHitStoreIds = new Set(reviews.filter(r => r.userId === u.id && isHit(r)).map(r => r.storeId));
+    const union = new Set([...myHitStoreIds, ...theirHitStoreIds]);
+    const intersection = [...myHitStoreIds].filter(id => theirHitStoreIds.has(id));
+    const overlapRate = union.size > 0 ? intersection.length / union.size : 0;
+    const tasteMatch = Math.round((affinity * 0.6 + overlapRate * 0.4) * 100);
+    const reviewCount = reviews.filter(r => r.userId === u.id).length;
+    const latestReview = reviews.filter(r => r.userId === u.id).sort((a, b) => b.date.localeCompare(a.date))[0];
+    const isFollowing = (follows[currentUser.id] || []).includes(u.id);
+    return { ...u, ut, tasteMatch, reviewCount, latestReview, isFollowing };
+  });
+
+  const filtered = usersWithStats.filter(u => {
+    if (!searchQ) return true;
+    const q = searchQ.toLowerCase();
+    return u.name.toLowerCase().includes(q) || (u.ut?.label || "").toLowerCase().includes(q);
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "match") return b.tasteMatch - a.tasteMatch;
+    if (sortBy === "reviews") return b.reviewCount - a.reviewCount;
+    if (sortBy === "recent") return (b.latestReview?.date || "").localeCompare(a.latestReview?.date || "");
+    return 0;
+  });
+
+  return (
+    <div className="fade-in" style={{ maxWidth: 700, margin: "0 auto", padding: "40px 16px" }}>
+      <SectionLabel>ユーザー一覧</SectionLabel>
+      <p style={{ marginTop: 8, fontSize: 12, color: "#5a5450", marginBottom: 20 }}>
+        {USER_TYPES[currentUser.userType]?.icon} {USER_TYPES[currentUser.userType]?.label} のあなたとの味覚マッチ順に表示中
+      </p>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="ユーザー名で検索..." style={{ flex: 1, minWidth: 150, background: "#1a1814", border: "1px solid #2a2620", borderRadius: 3, padding: "10px 14px", color: "#e8e0d4", outline: "none" }} />
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: "#1a1814", border: "1px solid #2a2620", color: "#9a9090", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
+          <option value="match">味覚マッチ順</option>
+          <option value="reviews">レビュー数順</option>
+          <option value="recent">最新レビュー順</option>
+        </select>
+      </div>
+
+      <p style={{ fontSize: 11, color: "#4a4440", letterSpacing: "0.08em", marginBottom: 12 }}>{sorted.length} 人</p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {sorted.map(u => {
+          const matchColor = u.tasteMatch >= 70 ? "#1abc9c" : u.tasteMatch >= 50 ? "#f39c12" : "#7a7268";
+          return (
+            <button key={u.id} onClick={() => navigate("user-profile", u.id)} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", color: "#e8e0d4", width: "100%" }}>
+              <div style={{ width: 42, height: 42, background: (u.ut?.color || "#5a5450") + "22", border: `1px solid ${(u.ut?.color || "#5a5450")}44`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{u.ut?.icon || "👤"}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.04em" }}>{u.name}</p>
+                  {u.isFollowing && <span style={{ fontSize: 10, color: "#c9a96e", background: "#c9a96e15", padding: "1px 8px", borderRadius: 20 }}>フォロー中</span>}
+                </div>
+                <p style={{ fontSize: 11, color: u.ut?.color || "#5a5450", marginTop: 2 }}>{u.ut?.label || "-"}</p>
+                <p style={{ fontSize: 10, color: "#3a3028", marginTop: 2 }}>{u.reviewCount}件のレビュー{u.latestReview ? ` · 最終 ${u.latestReview.date}` : ""}</p>
+              </div>
+              <div style={{ textAlign: "center", flexShrink: 0 }}>
+                <div style={{ position: "relative", width: 40, height: 40 }}>
+                  <svg viewBox="0 0 36 36" style={{ width: 40, height: 40, transform: "rotate(-90deg)" }}>
+                    <circle cx="18" cy="18" r="14" fill="none" stroke="#1e1c1a" strokeWidth="3" />
+                    <circle cx="18" cy="18" r="14" fill="none" stroke={matchColor} strokeWidth="3" strokeDasharray={`${(u.tasteMatch / 100) * 87.96} 87.96`} strokeLinecap="round" />
+                  </svg>
+                  <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: matchColor, fontWeight: 700 }}>{u.tasteMatch}</span>
+                </div>
+                <p style={{ fontSize: 9, color: "#4a4440", marginTop: 2, letterSpacing: "0.05em" }}>MATCH</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {sorted.length === 0 && (
+        <div style={{ textAlign: "center", padding: "60px 0", color: "#4a4440" }}>
+          <p style={{ fontSize: 36, marginBottom: 14 }}>👥</p>
+          <p style={{ fontSize: 14 }}>{searchQ ? "該当するユーザーがいません" : "他のユーザーがまだいません"}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 // ── AddStorePage: 一般ユーザー向け店舗登録 ────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 function AddStorePage({ navigate, currentUser, stores, setStores, notify }) {
