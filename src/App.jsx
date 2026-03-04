@@ -781,7 +781,7 @@ export default function App() {
   const props = { navigate, stores, setStores, reviews, setReviews, currentUser, setCurrentUser, users, setUsers, pageParam, searchQ, setSearchQ, notify, follows, setFollows, wishlists, setWishlists };
 
   if (loading) return (
-    <div style={{ fontFamily: "'Noto Serif JP','Georgia',serif", background: "#faf8f5", minHeight: "100vh", color: "#2c2420", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif", background: "#faf8f5", minHeight: "100vh", color: "#2c2420", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ textAlign: "center" }}>
         <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontStyle: "italic", color: "#c9a96e", marginBottom: 16 }}>Gap Review</p>
         <p style={{ fontSize: 12, color: "#c4b9ac", letterSpacing: "0.2em" }}>LOADING...</p>
@@ -790,9 +790,9 @@ export default function App() {
   );
 
   return (
-    <div style={{ fontFamily: "'Noto Serif JP','Georgia',serif", background: "#faf8f5", minHeight: "100vh", color: "#2c2420" }}>
+    <div style={{ fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif", background: "#faf8f5", minHeight: "100vh", color: "#2c2420" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
         html,body{background:#faf8f5!important;margin:0;padding:0}
         *{box-sizing:border-box;margin:0;padding:0}
         input,textarea,select{font-size:16px!important;font-family:inherit;-webkit-text-size-adjust:none;touch-action:manipulation}
@@ -1453,7 +1453,7 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
   if (submitted) return (
     <div className="fade-in" style={{ maxWidth: 500, margin: "100px auto", padding: "0 20px", textAlign: "center" }}>
       <p style={{ fontSize: 44, marginBottom: 22 }}>✓</p>
-      <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 300, marginBottom: 14 }}>レビューを投稿しました</h2>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 14 }}>レビューを投稿しました</h2>
       {gap && <p style={{ fontSize: 18, color: gap.color, letterSpacing: "0.1em", marginBottom: 28 }}>{gap.emoji} {gap.label}</p>}
       <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
         <button onClick={() => navigate("store", storeId)} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "12px 26px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>店舗ページへ</button>
@@ -1516,7 +1516,7 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
         {gap && (
           <div style={{ background: gap.color + "11", border: `1px solid ${gap.color}44`, borderRadius: 4, padding: "14px 22px", textAlign: "center" }}>
             <p style={{ fontSize: 11, color: gap.color, letterSpacing: "0.15em", marginBottom: 4, textTransform: "uppercase" }}>体験の感想</p>
-            <p style={{ fontSize: 26, color: gap.color, fontFamily: "'Cormorant Garamond',serif" }}>{gap.emoji} {gap.label}</p>
+            <p style={{ fontSize: 22, color: gap.color, fontWeight: 700, letterSpacing: "0.06em" }}>{gap.emoji} {gap.label}</p>
           </div>
         )}
 
@@ -1679,7 +1679,7 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
               <div style={{ width: 72, height: 72, background: rut?.color + "22", border: `2px solid ${rut?.color}55`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 16px" }}>
                 {rut?.icon}
               </div>
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 300, marginBottom: 8, letterSpacing: "0.04em" }}>
+              <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, letterSpacing: "0.02em" }}>
                 ようこそ、{registeredUser.name}さん
               </h2>
               <p style={{ fontSize: 12, color: rut?.color, letterSpacing: "0.12em", marginBottom: 4 }}>{rut?.label}</p>
@@ -1880,7 +1880,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
           ) : (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5, flexWrap: "wrap" }}>
-                <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 400, letterSpacing: "0.04em" }}>{currentUser.name}</h1>
+                <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "0.02em" }}>{currentUser.name}</h1>
                 <button onClick={() => setIsEditing(true)} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>✏️ 編集</button>
                 <button onClick={handleShare} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>🔗 シェア</button>
               </div>
@@ -2247,7 +2247,7 @@ function AddStorePage({ navigate, currentUser, stores, setStores, notify }) {
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ fontSize: 28 }}>{form.image}</span>
               <div>
-                <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, fontWeight: 400, letterSpacing: "0.04em" }}>{form.name}</p>
+                <p style={{ fontSize: 16, fontWeight: 600, letterSpacing: "0.02em" }}>{form.name}</p>
                 <p style={{ fontSize: 11, color: "#7a7268", marginTop: 3 }}>{form.area} / {form.category} / {form.priceRange}</p>
               </div>
             </div>
@@ -2659,7 +2659,7 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
       <div style={{ display: "flex", alignItems: "flex-start", gap: 18, marginBottom: 24, flexWrap: "wrap" }}>
         <div style={{ width: 58, height: 58, background: ut?.color + "22", border: `1px solid ${ut?.color}44`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{ut?.icon}</div>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 400, marginBottom: 4, letterSpacing: "0.04em" }}>{targetUser.name}</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4, letterSpacing: "0.02em" }}>{targetUser.name}</h1>
           <p style={{ fontSize: 12, color: ut?.color, letterSpacing: "0.1em", marginBottom: 2 }}>{ut?.label}</p>
           <p style={{ fontSize: 12, color: "#7a7268" }}>{ut?.desc}</p>
         </div>
@@ -2759,8 +2759,7 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
                     <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>{store.image}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17,
-                        fontWeight: 400, letterSpacing: "0.04em", marginBottom: 2,
+                      <p style={{ fontSize: 15, fontWeight: 600, letterSpacing: "0.02em", marginBottom: 2,
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{store.name}</p>
                       <p style={{ fontSize: 11, color: "#9a9088" }}>{store.area} · {store.category} · {store.priceRange}</p>
                     </div>
