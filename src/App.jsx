@@ -995,7 +995,7 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 40%,rgba(201,169,110,0.06) 0%,transparent 70%)", pointerEvents: "none" }} />
         <p style={{ fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", fontSize: 12, color: "#c9a96e", letterSpacing: "0.25em", marginBottom: 24, textTransform: "uppercase" }}>Gap Review</p>
         <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(34px,7vw,76px)", fontWeight: 300, lineHeight: 1.1, color: "#e8e0d4", marginBottom: 28, letterSpacing: "-0.02em" }}>
-          あなたの舌に<em style={{ fontStyle: "italic", color: "#c9a96e" }}>ピッタリ</em>のお店が見つかる
+          あなたの舌に<br /><em style={{ fontStyle: "italic", color: "#c9a96e" }}>ピッタリ</em>のお店が見つかる
         </h1>
         <p style={{ fontSize: 14, color: "#7a7268", maxWidth: 420, lineHeight: 1.9, letterSpacing: "0.06em", marginBottom: 48 }}>
           点数評価に依存しない新しいレビューシステム。<br />あなたの「期待」と「体験」のギャップが、真の評価軸になる。
