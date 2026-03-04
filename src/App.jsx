@@ -715,6 +715,7 @@ export default function App() {
   const [searchQ, setSearchQ] = useState("");
   const [notification, setNotification] = useState(null);
   const [follows, setFollows] = useState({});
+  const [wishlists, setWishlists] = useState({});
 
   // ── Supabase初期ロード ──────────────────────────────────
   useEffect(() => {
@@ -731,7 +732,8 @@ export default function App() {
       supabase.from("reviews").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("*"),
       supabase.from("follows").select("*"),
-    ]).then(([storesRes, reviewsRes, profilesRes, followsRes]) => {
+      supabase.from("wishlists").select("*"),
+    ]).then(([storesRes, reviewsRes, profilesRes, followsRes, wishlistsRes]) => {
       setStores(storesRes.data?.length
         ? storesRes.data.map(s => ({ id: s.id, name: s.name, category: s.category, area: s.area, priceRange: s.price_range, description: s.description, image: s.image }))
         : INITIAL_STORES);
@@ -744,6 +746,11 @@ export default function App() {
         const map = {};
         followsRes.data.forEach(f => { if (!map[f.follower_id]) map[f.follower_id] = []; map[f.follower_id].push(f.followee_id); });
         setFollows(map);
+      }
+      if (wishlistsRes.data) {
+        const map = {};
+        wishlistsRes.data.forEach(w => { if (!map[w.user_id]) map[w.user_id] = []; map[w.user_id].push(w.store_id); });
+        setWishlists(map);
       }
       setLoading(false);
     });
@@ -771,7 +778,7 @@ export default function App() {
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
   const notify = (msg, type = "success") => { setNotification({ msg, type }); setTimeout(() => setNotification(null), 3000); };
-  const props = { navigate, stores, setStores, reviews, setReviews, currentUser, setCurrentUser, users, setUsers, pageParam, searchQ, setSearchQ, notify, follows, setFollows };
+  const props = { navigate, stores, setStores, reviews, setReviews, currentUser, setCurrentUser, users, setUsers, pageParam, searchQ, setSearchQ, notify, follows, setFollows, wishlists, setWishlists };
 
   if (loading) return (
     <div style={{ fontFamily: "'Noto Serif JP','Georgia',serif", background: "#faf8f5", minHeight: "100vh", color: "#2c2420", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -812,7 +819,7 @@ export default function App() {
         {page === "review-form" && <ReviewFormPage {...props} />}
         {page === "login" && <LoginPage {...props} />}
         {page === "register" && <RegisterPage {...props} stores={stores} />}
-        {page === "profile" && <ProfilePage {...props} setReviews={setReviews} setFollows={setFollows} />}
+        {page === "profile" && <ProfilePage {...props} setReviews={setReviews} setFollows={setFollows} wishlists={wishlists} setWishlists={setWishlists} />}
         {page === "request-store" && <RequestStorePage {...props} />}
         {page === "add-store" && <AddStorePage {...props} />}
         {page === "users" && <UsersPage {...props} />}
@@ -847,12 +854,13 @@ function NavBar({ navigate, currentUser, setCurrentUser, notify }) {
   );
 }
 
-function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
+function HomePage({ navigate, stores, reviews, currentUser, follows, users, wishlists, setWishlists }) {
   // ── ログイン時: レコメンド × フォロー新着の混在フィード ──
   const [feedFilter, setFeedFilter] = useState("all");
 
   if (currentUser) {
     const myFollowingIds = follows?.[currentUser.id] || [];
+    const myWishlistIds = wishlists?.[currentUser.id] || [];
 
     // レコメンド店舗（未訪問・マッチ率60%以上）
     const visitedIds = new Set(reviews.filter(r => r.userId === currentUser.id).map(r => r.storeId));
@@ -882,21 +890,36 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
       .slice(0, 8)
       .map(r => ({ type: "sametype", data: r }));
 
-    // 混在パターン: レコメンド→フォロー→レコメンド→同タイプ→（繰り返し）
+    // ウィッシュリスト（未レビューのもの）→「行きましたか？」カード
+    const wishlistItems = myWishlistIds
+      .filter(sid => !visitedIds.has(sid))
+      .map(sid => stores.find(s => s.id === sid))
+      .filter(Boolean)
+      .slice(0, 5)
+      .map(s => ({ type: "wishlist", data: s }));
+
+    // 混在パターン: レコメンド→フォロー→同タイプ→（ウィッシュリストを4枚に1枚差し込む）
     const feed = [];
     const recs = [...recItems];
     const follows_ = [...followItems];
     const sameTypes = [...sameTypeItems];
+    const wishes = [...wishlistItems];
     let cycle = 0;
-    while (recs.length > 0 || follows_.length > 0 || sameTypes.length > 0) {
-      const pattern = cycle % 3;
-      if (pattern === 0 && recs.length > 0) feed.push(recs.shift());
-      else if (pattern === 1 && follows_.length > 0) feed.push(follows_.shift());
-      else if (pattern === 2 && sameTypes.length > 0) feed.push(sameTypes.shift());
-      else {
-        if (recs.length > 0) feed.push(recs.shift());
-        else if (follows_.length > 0) feed.push(follows_.shift());
-        else if (sameTypes.length > 0) feed.push(sameTypes.shift());
+    while (recs.length > 0 || follows_.length > 0 || sameTypes.length > 0 || wishes.length > 0) {
+      // 4サイクルに1回ウィッシュリストを差し込む
+      if (cycle % 4 === 3 && wishes.length > 0) {
+        feed.push(wishes.shift());
+      } else {
+        const pattern = cycle % 3;
+        if (pattern === 0 && recs.length > 0) feed.push(recs.shift());
+        else if (pattern === 1 && follows_.length > 0) feed.push(follows_.shift());
+        else if (pattern === 2 && sameTypes.length > 0) feed.push(sameTypes.shift());
+        else {
+          if (recs.length > 0) feed.push(recs.shift());
+          else if (follows_.length > 0) feed.push(follows_.shift());
+          else if (sameTypes.length > 0) feed.push(sameTypes.shift());
+          else if (wishes.length > 0) feed.push(wishes.shift());
+        }
       }
       cycle++;
     }
@@ -906,6 +929,7 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
         recommend: { color: "#c9a96e", text: "✦ あなたへのレコメンド" },
         follow:    { color: "#7a9acc", text: "● フォロー中の新着" },
         sametype:  { color: "#9a7acc", text: "◈ 同じタイプの新着" },
+        wishlist:  { color: "#e67e22", text: "🍽️ 行ってみたかったお店" },
       };
       const c = config[type] || config.follow;
       return (
@@ -931,6 +955,7 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
             { key: "recommend", label: "✦ レコメンド",          color: "#c9a96e" },
             { key: "follow",    label: "● フォロー中",          color: "#7a9acc" },
             { key: "sametype",  label: "◈ 同タイプ",            color: "#9a7acc" },
+            { key: "wishlist",  label: "🍽️ 行きたい",           color: "#e67e22" },
           ].map(t => (
             <button key={t.key} onClick={() => setFeedFilter(t.key)} style={{
               background: feedFilter === t.key ? t.color + "22" : "#ffffff",
@@ -966,7 +991,34 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
                 return (
                   <div key={"rec-" + store.id + "-" + i}>
                     <FeedLabel type="recommend" />
-                    <StoreCard store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} currentUser={currentUser} allReviews={reviews} allStores={stores} precomputedResult={store.matchResult} />
+                    <StoreCard store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} currentUser={currentUser} allReviews={reviews} allStores={stores} precomputedResult={store.matchResult} wishlists={wishlists} setWishlists={setWishlists} />
+                  </div>
+                );
+              } else if (item.type === "wishlist") {
+                const store = item.data;
+                const matchResult = calcMatchScore(store.id, currentUser, reviews, stores);
+                return (
+                  <div key={"wish-" + store.id + "-" + i}>
+                    <FeedLabel type="wishlist" />
+                    <div style={{ background: "#ffffff", border: "1px solid #e67e2244", borderRadius: 3, padding: "16px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                        <span style={{ fontSize: 28 }}>{store.image}</span>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.04em", marginBottom: 2 }}>{store.name}</p>
+                          <p style={{ fontSize: 11, color: "#7a7268" }}>{store.area} / {store.category}</p>
+                        </div>
+                        {matchResult && <MatchBadge matchResult={matchResult} />}
+                      </div>
+                      <p style={{ fontSize: 12, color: "#e67e22", fontWeight: 600, marginBottom: 12 }}>👀 行きましたか？感想を残しましょう</p>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => navigate("review-form", store.id)} style={{ flex: 1, background: "#e67e22", border: "none", color: "#fff", padding: "10px", fontSize: 12, fontWeight: 600, borderRadius: 2, letterSpacing: "0.08em" }}>
+                          レビューを書く →
+                        </button>
+                        <button onClick={() => navigate("store", store.id)} style={{ background: "none", border: "1px solid #e67e2244", color: "#e67e22", padding: "10px 14px", fontSize: 12, borderRadius: 2 }}>
+                          お店を見る
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 );
               } else {
@@ -1022,14 +1074,14 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
       <div style={{ padding: "40px 20px 80px", maxWidth: 900, margin: "0 auto" }}>
         <SectionLabel>注目の店舗</SectionLabel>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 14, marginTop: 28 }}>
-          {stores.slice(0, 3).map(store => <StoreCard key={store.id} store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} currentUser={currentUser} allReviews={reviews} allStores={stores} />)}
+          {stores.slice(0, 3).map(store => <StoreCard key={store.id} store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} currentUser={currentUser} allReviews={reviews} allStores={stores} wishlists={wishlists} setWishlists={setWishlists} />)}
         </div>
       </div>
     </div>
   );
 }
 
-function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearchQ }) {
+function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearchQ, wishlists, setWishlists }) {
   const [localQ, setLocalQ] = useState(searchQ);
   const [sortBy, setSortBy] = useState(currentUser ? "match" : "reviews");
   const [filterCat, setFilterCat] = useState("all");
@@ -1105,7 +1157,7 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
       </div>
       <p style={{ marginTop: 14, fontSize: 11, color: "#9a9088", letterSpacing: "0.08em" }}>{filtered.length} 件</p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 14, marginTop: 12 }}>
-        {filtered.map(store => <StoreCard key={store.id} store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} currentUser={currentUser} allReviews={reviews} allStores={stores} precomputedResult={store.matchResult} />)}
+        {filtered.map(store => <StoreCard key={store.id} store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} currentUser={currentUser} allReviews={reviews} allStores={stores} precomputedResult={store.matchResult} wishlists={wishlists} setWishlists={setWishlists} />)}
       </div>
       {filtered.length === 0 && (
         <div style={{ textAlign: "center", padding: "80px 0", color: "#9a9088" }}>
@@ -1118,7 +1170,7 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
   );
 }
 
-function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam, currentUser, notify }) {
+function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam, currentUser, notify, wishlists, setWishlists }) {
   const [sameTypeOnly, setSameTypeOnly] = useState(false);
   const store = stores.find(s => s.id === pageParam);
   if (!store) return <div style={{ padding: 80, textAlign: "center", color: "#9a9088" }}>店舗が見つかりません</div>;
@@ -1294,8 +1346,30 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
         </div>
       )}
 
-      <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 32, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <button onClick={() => navigate(currentUser ? "review-form" : "login", pageParam)} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "12px 28px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>レビューを書く</button>
+        {currentUser && (() => {
+          const isWished = (wishlists?.[currentUser.id] || []).includes(store.id);
+          const toggleWishlist = async () => {
+            if (isWished) {
+              await supabase.from("wishlists").delete().eq("user_id", currentUser.id).eq("store_id", store.id);
+              setWishlists(prev => ({ ...prev, [currentUser.id]: (prev[currentUser.id] || []).filter(id => id !== store.id) }));
+            } else {
+              await supabase.from("wishlists").insert({ user_id: currentUser.id, store_id: store.id });
+              setWishlists(prev => ({ ...prev, [currentUser.id]: [...(prev[currentUser.id] || []), store.id] }));
+            }
+          };
+          return (
+            <button onClick={toggleWishlist} style={{
+              background: isWished ? "#e67e2222" : "#ffffff",
+              border: `1px solid ${isWished ? "#e67e22" : "#c9a96e44"}`,
+              color: isWished ? "#e67e22" : "#7a7268",
+              padding: "12px 20px", fontSize: 13, borderRadius: 2, display: "flex", alignItems: "center", gap: 6,
+            }}>
+              {isWished ? "🍽️ 行ってみたいリスト登録済み" : "🤍 行ってみたい"}
+            </button>
+          );
+        })()}
       </div>
 
       {/* ── 口コミフィルター ── */}
@@ -1661,7 +1735,7 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
 }
 
 
-function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReviews, stores, notify, follows, setFollows, users }) {
+function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReviews, stores, notify, follows, setFollows, users, wishlists, setWishlists }) {
   if (!currentUser) { navigate("login"); return null; }
   const myReviews = reviews.filter(r => r.userId === currentUser.id);
   const [reviewFilter, setReviewFilter] = useState("all");
@@ -1888,6 +1962,53 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
           </div>
         </div>
       )}
+
+      {/* ── 行ってみたいリスト ── */}
+      {(() => {
+        const myWishlistIds = wishlists?.[currentUser.id] || [];
+        const wishStores = myWishlistIds
+          .map(sid => stores.find(s => s.id === sid))
+          .filter(Boolean);
+        if (wishStores.length === 0) return null;
+        return (
+          <div style={{ marginTop: 36 }}>
+            <SectionLabel>行ってみたいリスト</SectionLabel>
+            <p style={{ fontSize: 12, color: "#7a7268", marginTop: 6, marginBottom: 16 }}>🍽️ {wishStores.length}件のお店を保存しています</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {wishStores.map(s => {
+                const matchResult = calcMatchScore(s.id, currentUser, reviews, stores);
+                const isVisited = visitedIds.has(s.id);
+                return (
+                  <div key={s.id} style={{ background: "#ffffff", border: "1px solid #e67e2233", borderRadius: 3, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 }}>
+                    <button onClick={() => navigate("store", s.id)} style={{ background: "none", border: "none", display: "flex", alignItems: "center", gap: 14, flex: 1, textAlign: "left", color: "#2c2420", padding: 0 }}>
+                      <span style={{ fontSize: 24 }}>{s.image}</span>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: 14, letterSpacing: "0.04em", marginBottom: 2 }}>{s.name}</p>
+                        <p style={{ fontSize: 12, color: "#7a7268" }}>{s.area} / {s.category}</p>
+                        {isVisited && <p style={{ fontSize: 10, color: "#1abc9c", marginTop: 2 }}>✓ 訪問済み</p>}
+                      </div>
+                      {matchResult && <MatchBadge matchResult={matchResult} />}
+                    </button>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      {!isVisited && (
+                        <button onClick={() => navigate("review-form", s.id)} style={{ background: "#e67e22", border: "none", color: "#fff", padding: "6px 12px", fontSize: 11, borderRadius: 2, fontWeight: 600 }}>
+                          レビュー →
+                        </button>
+                      )}
+                      <button onClick={async () => {
+                        await supabase.from("wishlists").delete().eq("user_id", currentUser.id).eq("store_id", s.id);
+                        setWishlists(prev => ({ ...prev, [currentUser.id]: (prev[currentUser.id] || []).filter(id => id !== s.id) }));
+                      }} style={{ background: "none", border: "1px solid #c9a96e44", color: "#9a9088", padding: "6px 10px", fontSize: 11, borderRadius: 2 }}>
+                        削除
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
 
     </div>
@@ -2297,13 +2418,28 @@ function ReviewFilterTabs({ filter, setFilter, counts }) {
   );
 }
 
-function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStores, precomputedResult }) {
+function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStores, precomputedResult, wishlists, setWishlists }) {
   const stats = getGapStats(reviews);
   const matchResult = precomputedResult !== undefined
     ? precomputedResult
     : (currentUser && allReviews && allStores ? calcMatchScore(store.id, currentUser, allReviews, allStores) : null);
+
+  const isWished = currentUser && (wishlists?.[currentUser.id] || []).includes(store.id);
+  const toggleWishlist = async (e) => {
+    e.stopPropagation();
+    if (!currentUser) { navigate("login"); return; }
+    if (isWished) {
+      await supabase.from("wishlists").delete().eq("user_id", currentUser.id).eq("store_id", store.id);
+      setWishlists(prev => ({ ...prev, [currentUser.id]: (prev[currentUser.id] || []).filter(id => id !== store.id) }));
+    } else {
+      await supabase.from("wishlists").insert({ user_id: currentUser.id, store_id: store.id });
+      setWishlists(prev => ({ ...prev, [currentUser.id]: [...(prev[currentUser.id] || []), store.id] }));
+    }
+  };
+
   return (
-    <button onClick={() => navigate("store", store.id)} className="hover-lift" style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 3, width: "100%" }}>
+    <div style={{ position: "relative" }}>
+      <button onClick={() => navigate("store", store.id)} className="hover-lift" style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 3, width: "100%" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
         <span style={{ fontSize: 30 }}>{store.image}</span>
         <div style={{ flex: 1 }}>
@@ -2340,7 +2476,25 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
           <span style={{ fontSize: 10, color: "#c4b9ac", marginLeft: "auto" }}>{stats.total}件</span>
         </div>
       ) : <p style={{ fontSize: 11, color: "#c4b9ac" }}>まだレビューなし</p>}
-    </button>
+      </button>
+      {/* 行ってみたいボタン */}
+      {currentUser && (
+        <button
+          onClick={toggleWishlist}
+          title={isWished ? "行ってみたいリストから削除" : "行ってみたいリストに追加"}
+          style={{
+            position: "absolute", top: 12, right: 12,
+            background: isWished ? "#e67e2222" : "#faf8f5",
+            border: `1px solid ${isWished ? "#e67e22" : "#c9a96e44"}`,
+            borderRadius: "50%", width: 32, height: 32,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 15, transition: "all 0.2s", zIndex: 2,
+          }}
+        >
+          {isWished ? "🍽️" : "🤍"}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -2586,7 +2740,7 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
 
                   {/* 下段: ギャップ判定 + 期待値タグ + 日付（1行に収める） */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8,
-                    borderTop: "1px solid #1a1814", paddingTop: 10, flexWrap: "wrap" }}>
+                    borderTop: "1px solid #c9a96e33", paddingTop: 10, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 12, color: gap.color, fontWeight: 600,
                       letterSpacing: "0.06em", marginRight: 2 }}>{gap.emoji} {gap.label}</span>
                     <span style={{ fontSize: 11, color: "#7a7268", background: "#f5f0e8",
@@ -2599,7 +2753,7 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
                   {/* コメント */}
                   {r.comment && (
                     <p style={{ fontSize: 12, color: "#7a7268", lineHeight: 1.8,
-                      marginTop: 10, paddingTop: 10, borderTop: "1px solid #1a1814" }}>{r.comment}</p>
+                      marginTop: 10, paddingTop: 10, borderTop: "1px solid #c9a96e33" }}>{r.comment}</p>
                   )}
                 </button>
               );
