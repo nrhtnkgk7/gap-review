@@ -969,7 +969,7 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
   );
 }
 
-function StorePage({ navigate, stores, reviews, pageParam, currentUser }) {
+function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam, currentUser, notify }) {
   const [sameTypeOnly, setSameTypeOnly] = useState(false);
   const store = stores.find(s => s.id === pageParam);
   if (!store) return <div style={{ padding: 80, textAlign: "center", color: "#4a4440" }}>店舗が見つかりません</div>;
@@ -1004,6 +1004,21 @@ function StorePage({ navigate, stores, reviews, pageParam, currentUser }) {
         <div style={{ flex: 1, minWidth: 200 }}>
           <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(24px,5vw,36px)", fontWeight: 400, letterSpacing: "0.04em", marginBottom: 10 }}>{store.name}</h1>
           <p style={{ fontSize: 13, color: "#7a7268", lineHeight: 1.8, letterSpacing: "0.04em" }}>{store.description}</p>
+          {currentUser?.isAdmin && (
+            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+              <button onClick={() => navigate("admin")} style={{ background: "none", border: "1px solid #c9a96e44", color: "#c9a96e", padding: "4px 12px", fontSize: 11, borderRadius: 2 }}>✏️ 編集</button>
+              <button onClick={async () => {
+                if (!window.confirm(`「${store.name}」を削除しますか？関連するレビューも全て削除されます。`)) return;
+                const { error } = await supabase.from("stores").delete().eq("id", store.id);
+                if (error) { notify("削除に失敗しました", "error"); return; }
+                await supabase.from("reviews").delete().eq("store_id", store.id);
+                setStores(prev => prev.filter(s => s.id !== store.id));
+                setReviews(prev => prev.filter(r => r.storeId !== store.id));
+                notify("店舗を削除しました");
+                navigate("search");
+              }} style={{ background: "none", border: "1px solid #4a2020", color: "#e74c3c", padding: "4px 12px", fontSize: 11, borderRadius: 2 }}>🗑 削除</button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1167,7 +1182,13 @@ function StorePage({ navigate, stores, reviews, pageParam, currentUser }) {
         </p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {displayReviews.map(r => <ReviewCard key={r.id} review={r} currentUserType={currentUser?.userType} navigate={navigate} />)}
+          {displayReviews.map(r => <ReviewCard key={r.id} review={r} currentUserType={currentUser?.userType} navigate={navigate} isAdmin={currentUser?.isAdmin} onAdminDelete={async (reviewId) => {
+            if (!window.confirm("このレビューを削除しますか？")) return;
+            const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
+            if (error) { notify("削除に失敗しました", "error"); return; }
+            setReviews(prev => prev.filter(rv => rv.id !== reviewId));
+            notify("レビューを削除しました");
+          }} />)}
         </div>
       )}
     </div>
@@ -1969,7 +1990,7 @@ function RequestStorePage({ notify }) {
   );
 }
 
-function AdminPage({ navigate, currentUser, stores, setStores, reviews, users, notify }) {
+function AdminPage({ navigate, currentUser, stores, setStores, reviews, setReviews, users, notify }) {
   const [tab, setTab] = useState("stores");
   const [editingStore, setEditingStore] = useState(null);
   const [form, setForm] = useState({ name: "", category: "", area: "", priceRange: "¥¥", description: "", image: "🍽️" });
@@ -2023,7 +2044,14 @@ function AdminPage({ navigate, currentUser, stores, setStores, reviews, users, n
               </div>
               <p style={{ fontSize: 11, color: "#5a5450" }}>{reviews.filter(r => r.storeId === store.id).length}件</p>
               <button onClick={() => { setEditingStore(store.id); setForm({ name: store.name, category: store.category, area: store.area, priceRange: store.priceRange, description: store.description, image: store.image }); setTab("edit"); }} style={{ background: "none", border: "1px solid #3a3028", color: "#9a9090", padding: "5px 12px", fontSize: 11, borderRadius: 2 }}>編集</button>
-              <button onClick={() => setStores(prev => prev.filter(s => s.id !== store.id))} style={{ background: "none", border: "1px solid #4a2020", color: "#e74c3c", padding: "5px 12px", fontSize: 11, borderRadius: 2 }}>削除</button>
+              <button onClick={async () => {
+                if (!window.confirm(`「${store.name}」を削除しますか？`)) return;
+                const { error } = await supabase.from("stores").delete().eq("id", store.id);
+                if (error) { notify("削除に失敗しました", "error"); return; }
+                await supabase.from("reviews").delete().eq("store_id", store.id);
+                setStores(prev => prev.filter(s => s.id !== store.id));
+                notify("店舗を削除しました");
+              }} style={{ background: "none", border: "1px solid #4a2020", color: "#e74c3c", padding: "5px 12px", fontSize: 11, borderRadius: 2 }}>削除</button>
             </div>
           ))}
         </div>
@@ -2083,7 +2111,13 @@ function AdminPage({ navigate, currentUser, stores, setStores, reviews, users, n
 
       {tab === "reviews" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {reviews.map(r => { const store = stores.find(s => s.id === r.storeId); return <ReviewCard key={r.id} review={r} storeName={store?.name} showStore />; })}
+          {reviews.map(r => { const store = stores.find(s => s.id === r.storeId); return <ReviewCard key={r.id} review={r} storeName={store?.name} showStore isAdmin onAdminDelete={async (reviewId) => {
+            if (!window.confirm("このレビューを削除しますか？")) return;
+            const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
+            if (error) { notify("削除に失敗しました", "error"); return; }
+            setReviews(prev => prev.filter(rv => rv.id !== reviewId));
+            notify("レビューを削除しました");
+          }} />; })}
         </div>
       )}
 
@@ -2180,7 +2214,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
   );
 }
 
-function ReviewCard({ review, storeName, showStore, currentUserType, navigate, matchResult }) {
+function ReviewCard({ review, storeName, showStore, currentUserType, navigate, matchResult, isAdmin, onAdminDelete }) {
   const gap = calcGap(review.preExpect, review.result);
   const expectLabels = { low: "低い期待", normal: "普通の期待", high: "高い期待" };
   const ut = USER_TYPES[review.userType];
@@ -2213,6 +2247,11 @@ function ReviewCard({ review, storeName, showStore, currentUserType, navigate, m
         <span style={{ fontSize: 11, color: gap.color, background: gap.color + "15", padding: "2px 9px", borderRadius: 20 }}>{review.result}</span>
       </div>
       {review.comment && <p style={{ fontSize: 13, color: "#7a7268", lineHeight: 1.8 }}>{review.comment}</p>}
+      {isAdmin && onAdminDelete && (
+        <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #1e1c1a", textAlign: "right" }}>
+          <button onClick={(e) => { e.stopPropagation(); onAdminDelete(review.id); }} style={{ background: "none", border: "1px solid #4a2020", color: "#e74c3c", padding: "3px 10px", fontSize: 10, borderRadius: 2 }}>🗑 管理者削除</button>
+        </div>
+      )}
     </div>
   );
 }
