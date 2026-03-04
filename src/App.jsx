@@ -1083,6 +1083,19 @@ function StorePage({ navigate, stores, reviews, pageParam, currentUser }) {
               <p style={{ fontSize: 10, color: "#3a3028", marginBottom: 12 }}>
                 ヒット = 期待を超えた体験 + 高い期待通りだった体験
               </p>
+              {(() => {
+                const best = typeBreakdown.filter(t => t.count >= 2).sort((a, b) => b.hitRate - a.hitRate)[0];
+                if (!best || best.hitRate < 50) return null;
+                const bestType = USER_TYPES[best.type];
+                return (
+                  <div style={{ background: bestType.color + "11", border: `1px solid ${bestType.color}33`, borderRadius: 3, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 20 }}>{bestType.icon}</span>
+                    <p style={{ fontSize: 12, color: bestType.color, letterSpacing: "0.04em" }}>
+                      <span style={{ fontWeight: 600 }}>{bestType.label}</span> タイプの人が最もマッチしています（ヒット率 {best.hitRate}%）
+                    </p>
+                  </div>
+                );
+              })()}
               {typeBreakdown.map(t => {
                 const ut = USER_TYPES[t.type];
                 const isMe = currentUser?.userType === t.type;
