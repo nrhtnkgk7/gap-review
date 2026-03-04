@@ -1681,44 +1681,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
         ))}
       </div>
 
-      {(() => {
-        const feedReviews = reviews.filter(r => myFollowingIds.includes(r.userId)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
-        if (!feedReviews.length) return null;
-        return (
-          <div style={{ marginBottom: 36 }}>
-            <SectionLabel>フォロー中の新着</SectionLabel>
-            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 2 }}>
-              {feedReviews.map(r => {
-                const store = stores.find(s => s.id === r.storeId);
-                const matchResult = store ? calcMatchScore(store.id, currentUser, reviews, stores) : null;
-                return (
-                  <div key={r.id} onClick={() => navigate("store", r.storeId)} style={{ cursor: "pointer" }}>
-                    <ReviewCard review={r} storeName={store?.name} showStore currentUserType={currentUser.userType} navigate={navigate} matchResult={matchResult} />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
-
-      {recommended.length > 0 && (
-        <div style={{ marginBottom: 40 }}>
-          <SectionLabel>あなたへのレコメンド</SectionLabel>
-          <p style={{ fontSize: 12, color: "#5a5450", marginTop: 6, marginBottom: 16 }}>{ut?.label} タイプのマッチ率60%以上・未訪問</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {recommended.map(s => (
-              <button key={s.id} onClick={() => navigate("store", s.id)} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", color: "#e8e0d4", width: "100%" }}>
-                <span style={{ fontSize: 24 }}>{s.image}</span>
-                <div style={{ flex: 1 }}><p style={{ fontSize: 14, letterSpacing: "0.04em", marginBottom: 2 }}>{s.name}</p><p style={{ fontSize: 12, color: "#5a5450" }}>{s.area} / {s.category}</p></div>
-                <MatchBadge matchResult={s.matchResult} />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div>
+      <div style={{ marginBottom: 36 }}>
         <SectionLabel>投稿したレビュー</SectionLabel>
         {myReviews.length === 0 ? (
           <div style={{ marginTop: 22, textAlign: "center", padding: "44px 0" }}>
@@ -1760,6 +1723,43 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
           </>
         )}
       </div>
+
+      {recommended.length > 0 && (
+        <div style={{ marginTop: 36 }}>
+          <SectionLabel>あなたへのレコメンド</SectionLabel>
+          <p style={{ fontSize: 12, color: "#5a5450", marginTop: 6, marginBottom: 16 }}>{ut?.label} タイプのマッチ率60%以上・未訪問</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {recommended.map(s => (
+              <button key={s.id} onClick={() => navigate("store", s.id)} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", color: "#e8e0d4", width: "100%" }}>
+                <span style={{ fontSize: 24 }}>{s.image}</span>
+                <div style={{ flex: 1 }}><p style={{ fontSize: 14, letterSpacing: "0.04em", marginBottom: 2 }}>{s.name}</p><p style={{ fontSize: 12, color: "#5a5450" }}>{s.area} / {s.category}</p></div>
+                <MatchBadge matchResult={s.matchResult} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(() => {
+        const feedReviews = reviews.filter(r => myFollowingIds.includes(r.userId)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+        if (!feedReviews.length) return null;
+        return (
+          <div style={{ marginTop: 36 }}>
+            <SectionLabel>フォロー中の新着</SectionLabel>
+            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 2 }}>
+              {feedReviews.map(r => {
+                const store = stores.find(s => s.id === r.storeId);
+                const matchResult = store ? calcMatchScore(store.id, currentUser, reviews, stores) : null;
+                return (
+                  <div key={r.id} onClick={() => navigate("store", r.storeId)} style={{ cursor: "pointer" }}>
+                    <ReviewCard review={r} storeName={store?.name} showStore currentUserType={currentUser.userType} navigate={navigate} matchResult={matchResult} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
