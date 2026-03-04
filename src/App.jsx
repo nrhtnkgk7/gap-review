@@ -281,13 +281,13 @@ const SAMPLE_REVIEWS = [
 ];
 
 const USER_TYPES = {
-  BI: { label: "Bold × Ingredient", icon: "🔥", desc: "濃い味 × 素材重視", color: "#C0392B" },
-  BC: { label: "Bold × Composition", icon: "⚡", desc: "濃い味 × バランス重視", color: "#8E44AD" },
-  DI: { label: "Delicate × Ingredient", icon: "🌿", desc: "繊細な味 × 素材重視", color: "#27AE60" },
-  DC: { label: "Delicate × Composition", icon: "✨", desc: "繊細な味 × バランス重視", color: "#2980B9" },
+  BI: { label: "がっつり × 素材派", icon: "🔥", desc: "濃い味 × 素材重視", color: "#C0392B" },
+  BC: { label: "がっつり × バランス派", icon: "⚡", desc: "濃い味 × バランス重視", color: "#8E44AD" },
+  DI: { label: "繊細 × 素材派", icon: "🌿", desc: "繊細な味 × 素材重視", color: "#27AE60" },
+  DC: { label: "繊細 × バランス派", icon: "✨", desc: "繊細な味 × バランス重視", color: "#2980B9" },
 };
 
-// ─── 期待値ギャップの定義 ────────────────────────────────────────────────────
+// ─── 体験の感想の定義 ────────────────────────────────────────────────────
 //
 //  「期待値」と「体験の結果」の意味的な対応で判定する。
 //  数値差分ではなく、各組み合わせを直接マッピングする方式。
@@ -317,9 +317,9 @@ const GAP_MAP = {
 
 function calcGap(preExpect, result) {
   const value = GAP_MAP[preExpect]?.[result] ?? 0;
-  if (value === 1)  return { label: "超越", color: "#1abc9c", emoji: "🚀", value };
-  if (value === 0)  return { label: "一致", color: "#f39c12", emoji: "✓",  value };
-  return              { label: "乖離", color: "#e74c3c", emoji: "↓",  value };
+  if (value === 1)  return { label: "期待以上！", color: "#1abc9c", emoji: "🚀", value };
+  if (value === 0)  return { label: "期待通り", color: "#f39c12", emoji: "✓",  value };
+  return              { label: "ちょっと残念", color: "#e74c3c", emoji: "↓",  value };
 }
 
 function getGapStats(reviews) {
@@ -610,12 +610,12 @@ function scoreToDisplay(score, isSplit) {
   // SPLITはスコアがプラス圏（0以上）の場合のみ適用する
   // スコアがマイナスの場合は「合わない」方向が明確なので BAD/UNLIKELY を優先する
   // 例: BIが鮨でBelowが多い → 分散は大きいがスコアはマイナス → BAD MATCH
-  if (isSplit && score >= 0) return { label: "SPLIT",          color: "#e67e22", tier: "split"    };
-  if (score >= 75)           return { label: "HIGH MATCH",     color: "#1abc9c", tier: "high"     };
-  if (score >= 50)           return { label: "LIKELY MATCH",   color: "#f39c12", tier: "likely"   };
-  if (score >= 0)            return { label: "UNCERTAIN",      color: "#7a7268", tier: "uncertain" };
-  if (score >= -49)          return { label: "UNLIKELY MATCH", color: "#e74c3c", tier: "unlikely"  };
-  return                            { label: "BAD MATCH",      color: "#c0392b", tier: "bad"       };
+  if (isSplit && score >= 0) return { label: "評価が分かれる", color: "#e67e22", tier: "split"    };
+  if (score >= 75)           return { label: "かなり合いそう", color: "#1abc9c", tier: "high"     };
+  if (score >= 50)           return { label: "合いそう",       color: "#f39c12", tier: "likely"   };
+  if (score >= 0)            return { label: "まだわからない", color: "#7a7268", tier: "uncertain" };
+  if (score >= -49)          return { label: "合わないかも",   color: "#e74c3c", tier: "unlikely"  };
+  return                            { label: "あまり合わない", color: "#c0392b", tier: "bad"       };
 }
 
 function MatchBadge({ matchResult, compact }) {
@@ -639,7 +639,7 @@ function MatchBadge({ matchResult, compact }) {
   // score<0の場合はisSplit=trueでも「賛否両論」ではなく通常のデータ件数表示
   const showAsSplit = isSplit && score >= 0;
   const dataLabel = showAsSplit
-    ? `同タイプ${sameTypeCount}件・賛否両論`
+    ? `同タイプ${sameTypeCount}件・評価が分かれる`
     : sameTypeCount >= 1
     ? `同タイプ ${sameTypeCount}件のデータ`
     : isEstimate
@@ -905,7 +905,7 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
       const config = {
         recommend: { color: "#c9a96e", text: "✦ あなたへのレコメンド" },
         follow:    { color: "#7a9acc", text: "● フォロー中の新着" },
-        sametype:  { color: "#9a7acc", text: "◈ 同じ味覚タイプの新着" },
+        sametype:  { color: "#9a7acc", text: "◈ 同じタイプの新着" },
       };
       const c = config[type] || config.follow;
       return (
@@ -993,9 +993,9 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
     <div className="fade-in">
       <div style={{ minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 20px", textAlign: "center", position: "relative" }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 40%,rgba(201,169,110,0.06) 0%,transparent 70%)", pointerEvents: "none" }} />
-        <p style={{ fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", fontSize: 12, color: "#c9a96e", letterSpacing: "0.25em", marginBottom: 24, textTransform: "uppercase" }}>Expectation Gap Review</p>
+        <p style={{ fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", fontSize: 12, color: "#c9a96e", letterSpacing: "0.25em", marginBottom: 24, textTransform: "uppercase" }}>Gap Review</p>
         <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(34px,7vw,76px)", fontWeight: 300, lineHeight: 1.1, color: "#e8e0d4", marginBottom: 28, letterSpacing: "-0.02em" }}>
-          期待と体験の<br /><em style={{ fontStyle: "italic", color: "#c9a96e" }}>差分</em>を可視化する
+          あなたの舌に<em style={{ fontStyle: "italic", color: "#c9a96e" }}>ピッタリ</em>のお店が見つかる
         </h1>
         <p style={{ fontSize: 14, color: "#7a7268", maxWidth: 420, lineHeight: 1.9, letterSpacing: "0.06em", marginBottom: 48 }}>
           点数評価に依存しない新しいレビューシステム。<br />あなたの「期待」と「体験」のギャップが、真の評価軸になる。
@@ -1007,9 +1007,9 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
       </div>
 
       <div style={{ padding: "60px 20px", maxWidth: 900, margin: "0 auto" }}>
-        <SectionLabel>How It Works</SectionLabel>
+        <SectionLabel>こんなふうに使います</SectionLabel>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 2, marginTop: 28 }}>
-          {[["01","期待を設定","訪問前の期待値（低/普通/高）を記録する"],["02","体験を評価","Good / Expected / Below の3択で体験を報告"],["03","ギャップを可視化","差分が「超越・一致・乖離」として自動算出される"]].map(([n,t,d]) => (
+          {[["01","訪問前に期待値を決める","行く前にどのくらい期待してる？を記録"],["02","食べたらひと言","期待以上？期待通り？ちょっと残念？の3択で報告"],["03","ズレが見える","期待とのズレが「期待以上・期待通り・ちょっと残念」で自動表示"]].map(([n,t,d]) => (
             <div key={n} style={{ background: "#111012", padding: "28px 22px", borderLeft: "1px solid #1e1c1a" }}>
               <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 38, color: "#2a2620", fontWeight: 300, marginBottom: 12 }}>{n}</p>
               <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, letterSpacing: "0.06em" }}>{t}</h3>
@@ -1065,7 +1065,7 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
         <div style={{ marginTop: 14, padding: "10px 14px", background: "#111012", border: "1px solid #1e1c1a", borderRadius: 3, display: "flex", alignItems: "center", gap: 8 }}>
           <span>{USER_TYPES[currentUser.userType]?.icon}</span>
           <p style={{ fontSize: 12, color: "#7a7268" }}>
-            <span style={{ color: USER_TYPES[currentUser.userType]?.color }}>{USER_TYPES[currentUser.userType]?.label}</span> のあなたへのマッチ率順に表示中
+            <span style={{ color: USER_TYPES[currentUser.userType]?.color }}>{USER_TYPES[currentUser.userType]?.label}</span> のあなたとの相性順に表示中
           </p>
         </div>
       ) : (
@@ -1079,10 +1079,10 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
           </div>
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: 12, color: "#c9a96e", fontWeight: 600, letterSpacing: "0.06em", marginBottom: 2 }}>
-              あなたの味覚タイプに合う店舗を発見しよう
+              あなたの好みに合うお店を発見しよう
             </p>
             <p style={{ fontSize: 11, color: "#5a5450" }}>
-              ログインすると各店舗のマッチ率が表示されます
+              ログインすると各店舗との相性が表示されます
             </p>
           </div>
           <span style={{ fontSize: 12, color: "#c9a96e", fontWeight: 600, letterSpacing: "0.08em", flexShrink: 0 }}>
@@ -1096,7 +1096,7 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
           {categories.map(c => <option key={c} value={c}>{c === "all" ? "全カテゴリ" : c}</option>)}
         </select>
         <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: "#1a1814", border: "1px solid #2a2620", color: "#9a9090", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
-          {currentUser && <option value="match">マッチ率順</option>}
+          {currentUser && <option value="match">相性順</option>}
           <option value="reviews">レビュー数順</option>
           <option value="newest">新店舗順</option>
           <option value="latest-review">新口コミ順</option>
@@ -1187,8 +1187,8 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
               <span style={{ fontSize: 18, color: "#3a3028" }}>?</span>
             </div>
             <div>
-              <p style={{ fontSize: 11, color: "#3a3028", letterSpacing: "0.1em", fontWeight: 600 }}>YOUR MATCH</p>
-              <p style={{ fontSize: 11, color: "#2a2620", marginTop: 2 }}>ログイン後に表示されます</p>
+              <p style={{ fontSize: 11, color: "#3a3028", letterSpacing: "0.1em", fontWeight: 600 }}>相性</p>
+              <p style={{ fontSize: 11, color: "#2a2620", marginTop: 2 }}>ログインすると表示されます</p>
             </div>
           </div>
         ) : null}
@@ -1196,28 +1196,28 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
           <>
             {matchResult.isSplit && matchResult.score >= 0 && (
               <div style={{ marginTop: 10, padding: "10px 14px", background: "#e67e2211", border: "1px solid #e67e2244", borderRadius: 3 }}>
-                <p style={{ fontSize: 12, color: "#e67e22", fontWeight: 600, marginBottom: 4 }}>⚡ この店はあなたのタイプの中で賛否両論です</p>
+                <p style={{ fontSize: 12, color: "#e67e22", fontWeight: 600, marginBottom: 4 }}>⚡ このお店、タイプ内でも評価が分かれています</p>
                 <p style={{ fontSize: 11, color: "#7a7268", lineHeight: 1.7 }}>
-                  同タイプユーザーでも「期待を超えた」と「期待を下回った」に評価が分かれています。
-                  好みやその日のコンディションによって体験が大きく変わる可能性があります。
+                  同じタイプの人の中でも「最高だった」「イマイチだった」が分かれているお店です。
+                  その日のコンディションや好みで体験が変わりやすいかもしれません。
                 </p>
               </div>
             )}
             {!(matchResult.isSplit && matchResult.score >= 0) && matchResult.score <= -50 && (
               <div style={{ marginTop: 10, padding: "10px 14px", background: "#c0392b11", border: "1px solid #c0392b44", borderRadius: 3 }}>
-                <p style={{ fontSize: 12, color: "#c0392b", fontWeight: 600, marginBottom: 4 }}>⚠ あなたのタイプには合いにくい店です</p>
+                <p style={{ fontSize: 12, color: "#c0392b", fontWeight: 600, marginBottom: 4 }}>⚠ あなたのタイプには合わないことが多いお店です</p>
                 <p style={{ fontSize: 11, color: "#7a7268", lineHeight: 1.7 }}>
-                  同タイプユーザーの多くが期待を下回る体験をしています。
-                  周囲の評判が高くても、あなたの味覚傾向とは合わない可能性があります。訪問前にレビューを確認することをおすすめします。
+                  同じタイプの人の多くが「ちょっと残念」と感じているお店です。
+                  世間の評判が高くても、あなたの好みとは合わない可能性があります。レビューをよく読んでから行くのがおすすめです。
                 </p>
               </div>
             )}
             {!(matchResult.isSplit && matchResult.score >= 0) && matchResult.score > -50 && matchResult.score < 0 && (
               <div style={{ marginTop: 10, padding: "10px 14px", background: "#e74c3c11", border: "1px solid #e74c3c33", borderRadius: 3 }}>
-                <p style={{ fontSize: 12, color: "#e74c3c", fontWeight: 600, marginBottom: 4 }}>📋 やや合いにくい傾向があります</p>
+                <p style={{ fontSize: 12, color: "#e74c3c", fontWeight: 600, marginBottom: 4 }}>📋 やや合わない傾向があります</p>
                 <p style={{ fontSize: 11, color: "#7a7268", lineHeight: 1.7 }}>
-                  同タイプユーザーが期待を下回る体験をしているケースが見られます。
-                  レビュー内容を参考に、期待値を調整してから訪問するのがよいかもしれません。
+                  同じタイプの人に「ちょっと残念」が出てきているお店です。
+                  期待しすぎず、レビューを参考にしてから行くといいかもしれません。
                 </p>
               </div>
             )}
@@ -1227,9 +1227,9 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
 
       {stats && (
         <div style={{ background: "#111012", border: "1px solid #1e1c1a", borderRadius: 4, padding: "22px 24px", marginBottom: 32 }}>
-          <p style={{ fontSize: 11, letterSpacing: "0.2em", color: "#4a4440", marginBottom: 16, textTransform: "uppercase" }}>期待値ギャップ分布</p>
+          <p style={{ fontSize: 11, letterSpacing: "0.2em", color: "#4a4440", marginBottom: 16, textTransform: "uppercase" }}>みんなの感想</p>
           <div style={{ display: "flex" }}>
-            {[["超越","#1abc9c",stats.beyond],["一致","#f39c12",stats.match],["乖離","#e74c3c",stats.below]].map(([label,color,count]) => (
+            {[["期待以上！","#1abc9c",stats.beyond],["期待通り","#f39c12",stats.match],["ちょっと残念","#e74c3c",stats.below]].map(([label,color,count]) => (
               <div key={label} style={{ flex: 1, textAlign: "center", padding: "12px 0", borderRight: "1px solid #1e1c1a" }}>
                 <p style={{ fontSize: 24, fontFamily: "'Cormorant Garamond',serif", color, marginBottom: 4 }}>{count}</p>
                 <p style={{ fontSize: 11, color, letterSpacing: "0.1em" }}>{label}</p>
@@ -1245,9 +1245,9 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
 
           {typeBreakdown.length > 0 && (
             <div style={{ marginTop: 22 }}>
-              <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#4a4440", marginBottom: 4 }}>味覚タイプ別のヒット率</p>
+              <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#4a4440", marginBottom: 4 }}>タイプ別「よかった率」</p>
               <p style={{ fontSize: 10, color: "#3a3028", marginBottom: 12 }}>
-                ヒット = 期待を超えた体験 + 高い期待通りだった体験
+                よかった = 期待以上 + 高い期待にしっかり応えた体験
               </p>
               {(() => {
                 const best = typeBreakdown.filter(t => t.count >= 2).sort((a, b) => b.hitRate - a.hitRate)[0];
@@ -1257,7 +1257,7 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
                   <div style={{ background: bestType.color + "11", border: `1px solid ${bestType.color}33`, borderRadius: 3, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 20 }}>{bestType.icon}</span>
                     <p style={{ fontSize: 12, color: bestType.color, letterSpacing: "0.04em" }}>
-                      <span style={{ fontWeight: 600 }}>{bestType.label}</span> タイプの人が最もマッチしています（ヒット率 {best.hitRate}%）
+                      <span style={{ fontWeight: 600 }}>{bestType.label}</span> タイプの人に一番刺さっています（よかった率 {best.hitRate}%）
                     </p>
                   </div>
                 );
@@ -1274,10 +1274,10 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
                         {ut.label}{isMe ? " 👈" : ""}
                       </span>
                       <span style={{ fontSize: 11, color: isMe ? hitColor : "#5a5450", fontWeight: isMe ? 600 : 400 }}>
-                        ヒット {t.hitRate}%
+                        よかった {t.hitRate}%
                       </span>
                       {t.missRate > 0 && (
-                        <span style={{ fontSize: 10, color: "#e74c3c" }}>/ ミス {t.missRate}%</span>
+                        <span style={{ fontSize: 10, color: "#e74c3c" }}>/ 残念 {t.missRate}%</span>
                       )}
                       <span style={{ fontSize: 10, color: "#3a3028", width: 24, textAlign: "right" }}>{t.count}件</span>
                     </div>
@@ -1300,7 +1300,7 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
 
       {/* ── 口コミフィルター ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
-        <SectionLabel>口コミ ({sameTypeOnly && currentUser ? `${displayReviews.length} / ${storeReviews.length}` : storeReviews.length})</SectionLabel>
+        <SectionLabel>みんなの感想 ({sameTypeOnly && currentUser ? `${displayReviews.length} / ${storeReviews.length}` : storeReviews.length})</SectionLabel>
         {currentUser && storeReviews.length > 0 && (
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
             <div
@@ -1327,7 +1327,7 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
 
       {displayReviews.length === 0 ? (
         <p style={{ marginTop: 16, color: "#4a4440", fontSize: 14 }}>
-          {sameTypeOnly ? "同タイプの口コミはまだありません" : "まだレビューがありません"}
+          {sameTypeOnly ? "同じタイプの感想はまだありません" : "まだ感想が投稿されていません"}
         </p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -1413,17 +1413,17 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
           )}
         </FormSection>
 
-        <FormSection label="訪問前の期待値" required>
+        <FormSection label="訪問前の気分・期待" required>
           <div style={{ display: "flex", gap: 8 }}>
-            {[["low","低い"],["normal","普通"],["high","高い"]].map(([v,l]) => (
+            {[["low","あまり期待してない"],["normal","普通に期待"],["high","かなり期待"]].map(([v,l]) => (
               <button key={v} onClick={() => setPreExpect(v)} style={{ flex: 1, background: preExpect === v ? "#c9a96e" : "#1a1814", border: `1px solid ${preExpect === v ? "#c9a96e" : "#2a2620"}`, color: preExpect === v ? "#0c0c0e" : "#9a9090", padding: "14px 8px", borderRadius: 3, fontSize: 14, fontWeight: preExpect === v ? 600 : 400, transition: "all 0.2s" }}>{l}</button>
             ))}
           </div>
         </FormSection>
 
-        <FormSection label="実際の食体験" required>
+        <FormSection label="食べてみてどうでしたか？" required>
           <div style={{ display: "flex", gap: 8 }}>
-            {[["Good","🚀","期待以上","#1abc9c"],["Expected","✓","期待通り","#f39c12"],["Below","↓","期待以下","#e74c3c"]].map(([v,icon,l,c]) => (
+            {[["Good","🚀","期待以上！","#1abc9c"],["Expected","✓","期待通り","#f39c12"],["Below","↓","ちょっと残念","#e74c3c"]].map(([v,icon,l,c]) => (
               <button key={v} onClick={() => setResult(v)} style={{ flex: 1, background: result === v ? c + "22" : "#1a1814", border: `1px solid ${result === v ? c : "#2a2620"}`, color: result === v ? c : "#9a9090", padding: "14px 8px", borderRadius: 3, transition: "all 0.2s" }}>
                 <p style={{ fontSize: 20, marginBottom: 5 }}>{icon}</p>
                 <p style={{ fontSize: 13, fontWeight: result === v ? 600 : 400 }}>{v}</p>
@@ -1435,7 +1435,7 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
 
         {gap && (
           <div style={{ background: gap.color + "11", border: `1px solid ${gap.color}44`, borderRadius: 4, padding: "14px 22px", textAlign: "center" }}>
-            <p style={{ fontSize: 11, color: gap.color, letterSpacing: "0.15em", marginBottom: 4, textTransform: "uppercase" }}>期待値ギャップ</p>
+            <p style={{ fontSize: 11, color: gap.color, letterSpacing: "0.15em", marginBottom: 4, textTransform: "uppercase" }}>体験の感想</p>
             <p style={{ fontSize: 26, color: gap.color, fontFamily: "'Cormorant Garamond',serif" }}>{gap.emoji} {gap.label}</p>
           </div>
         )}
@@ -1544,7 +1544,7 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
             onClick={() => { if (name && email && password) setStep(2); else notify("入力してください", "error"); }}
             style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "16px", fontSize: 14, letterSpacing: "0.12em", fontWeight: 600, borderRadius: 2 }}
           >
-            次へ：味覚プロファイル →
+            次へ：好みを教えてください →
           </button>
         </div>
       )}
@@ -1552,10 +1552,10 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
       {/* Step 2: 味覚タイプ */}
       {step === 2 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 26 }}>
-          <p style={{ fontSize: 13, color: "#7a7268", lineHeight: 1.8 }}>あなたの味覚傾向を教えてください。パーソナライズされたレコメンドの基礎になります。</p>
-          <FormSection label="軸① 味の方向性">
+          <p style={{ fontSize: 13, color: "#7a7268", lineHeight: 1.8 }}>あなたの味覚傾向を教えてください。あなたにぴったりのお店を見つけるためのベースになります。</p>
+          <FormSection label="好みの味は？">
             <div style={{ display: "flex", gap: 8 }}>
-              {[["B", "Bold（濃い味）", "🔥"], ["D", "Delicate（繊細）", "🌿"]].map(([v, l, icon]) => (
+              {[["B", "しっかり濃い味", "🔥"], ["D", "繊細・あっさり", "🌿"]].map(([v, l, icon]) => (
                 <button key={v} onClick={() => setAxis1(v)} style={{ flex: 1, background: axis1 === v ? "#c9a96e22" : "#1a1814", border: `1px solid ${axis1 === v ? "#c9a96e" : "#2a2620"}`, color: axis1 === v ? "#c9a96e" : "#9a9090", padding: "18px 12px", borderRadius: 3, transition: "all 0.2s" }}>
                   <p style={{ fontSize: 26, marginBottom: 7 }}>{icon}</p>
                   <p style={{ fontSize: 13, fontWeight: axis1 === v ? 600 : 400 }}>{l}</p>
@@ -1563,9 +1563,9 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
               ))}
             </div>
           </FormSection>
-          <FormSection label="軸② 体験志向">
+          <FormSection label="何を大事にする？">
             <div style={{ display: "flex", gap: 8 }}>
-              {[["I", "素材重視", "🥩"], ["C", "設計・バランス重視", "⚖️"]].map(([v, l, icon]) => (
+              {[["I", "素材の良さ重視", "🥩"], ["C", "バランス・調和重視", "⚖️"]].map(([v, l, icon]) => (
                 <button key={v} onClick={() => setAxis2(v)} style={{ flex: 1, background: axis2 === v ? "#c9a96e22" : "#1a1814", border: `1px solid ${axis2 === v ? "#c9a96e" : "#2a2620"}`, color: axis2 === v ? "#c9a96e" : "#9a9090", padding: "18px 12px", borderRadius: 3, transition: "all 0.2s" }}>
                   <p style={{ fontSize: 26, marginBottom: 7 }}>{icon}</p>
                   <p style={{ fontSize: 13, fontWeight: axis2 === v ? 600 : 400 }}>{l}</p>
@@ -1604,9 +1604,9 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
               </h2>
               <p style={{ fontSize: 12, color: rut?.color, letterSpacing: "0.12em", marginBottom: 4 }}>{rut?.label}</p>
               <p style={{ fontSize: 13, color: "#5a5450", lineHeight: 1.9 }}>
-                味覚プロファイルを登録しました。<br />
+                好みのタイプを登録しました。<br />
                 最初の1件のレビューで、<br />
-                あなた専用のマッチ率が動き始めます。
+                あなた専用の「合いそう度」が動き始めます。
               </p>
             </div>
 
@@ -1761,9 +1761,9 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
               <FormSection label="ユーザーネーム">
                 <input value={editName} onChange={e => setEditName(e.target.value)} style={inputStyle} />
               </FormSection>
-              <FormSection label="軸① 味の方向性">
+              <FormSection label="好みの味は？">
                 <div style={{ display: "flex", gap: 8 }}>
-                  {[["B", "Bold（濃い味）", "🔥"], ["D", "Delicate（繊細）", "🌿"]].map(([v, l, icon]) => (
+                  {[["B", "しっかり濃い味", "🔥"], ["D", "繊細・あっさり", "🌿"]].map(([v, l, icon]) => (
                     <button key={v} onClick={() => setEditAxis1(v)} style={{ flex: 1, background: editAxis1 === v ? "#c9a96e22" : "#1a1814", border: `1px solid ${editAxis1 === v ? "#c9a96e" : "#2a2620"}`, color: editAxis1 === v ? "#c9a96e" : "#9a9090", padding: "12px 8px", borderRadius: 3, transition: "all 0.2s" }}>
                       <p style={{ fontSize: 18, marginBottom: 4 }}>{icon}</p>
                       <p style={{ fontSize: 11, fontWeight: editAxis1 === v ? 600 : 400 }}>{l}</p>
@@ -1771,9 +1771,9 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
                   ))}
                 </div>
               </FormSection>
-              <FormSection label="軸② 体験志向">
+              <FormSection label="何を大事にする？">
                 <div style={{ display: "flex", gap: 8 }}>
-                  {[["I", "素材重視", "🥩"], ["C", "設計・バランス重視", "⚖️"]].map(([v, l, icon]) => (
+                  {[["I", "素材の良さ重視", "🥩"], ["C", "バランス・調和重視", "⚖️"]].map(([v, l, icon]) => (
                     <button key={v} onClick={() => setEditAxis2(v)} style={{ flex: 1, background: editAxis2 === v ? "#c9a96e22" : "#1a1814", border: `1px solid ${editAxis2 === v ? "#c9a96e" : "#2a2620"}`, color: editAxis2 === v ? "#c9a96e" : "#9a9090", padding: "12px 8px", borderRadius: 3, transition: "all 0.2s" }}>
                       <p style={{ fontSize: 18, marginBottom: 4 }}>{icon}</p>
                       <p style={{ fontSize: 11, fontWeight: editAxis2 === v ? 600 : 400 }}>{l}</p>
@@ -1822,7 +1822,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, marginBottom: 32 }}>
-        {[{ label: "投稿数", key: "all", value: reviewCounts.all }, { label: "ヒット体験", key: "beyond", value: reviewCounts.beyond }, { label: "乖離体験", key: "below", value: reviewCounts.below }].map(({ label, key, value }) => (
+        {[{ label: "投稿数", key: "all", value: reviewCounts.all }, { label: "よかった！", key: "beyond", value: reviewCounts.beyond }, { label: "残念だった", key: "below", value: reviewCounts.below }].map(({ label, key, value }) => (
           <button key={key} onClick={() => setReviewFilter(key)} style={{ background: reviewFilter === key ? "#1a1814" : "#111012", padding: "18px", textAlign: "center", border: `1px solid ${reviewFilter === key ? "#c9a96e44" : "#1e1c1a"}`, color: "#e8e0d4", cursor: "pointer" }}>
             <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, color: "#c9a96e", marginBottom: 4 }}>{value}</p>
             <p style={{ fontSize: 11, color: "#5a5450", letterSpacing: "0.1em" }}>{label}</p>
@@ -1834,7 +1834,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
         <SectionLabel>投稿したレビュー</SectionLabel>
         {myReviews.length === 0 ? (
           <div style={{ marginTop: 22, textAlign: "center", padding: "44px 0" }}>
-            <p style={{ fontSize: 14, color: "#4a4440", marginBottom: 18 }}>まだレビューがありません</p>
+            <p style={{ fontSize: 14, color: "#4a4440", marginBottom: 18 }}>まだ感想が投稿されていません</p>
             <button onClick={() => navigate("review-form")} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "12px 26px", fontSize: 13, fontWeight: 600 }}>最初のレビューを書く</button>
           </div>
         ) : (
@@ -1860,7 +1860,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
                       </div>
                       <div style={{ marginBottom: 8 }}><span style={{ fontSize: 11, color: "#7a7268" }}>{r.date}</span></div>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, background: "#1a1814", border: "1px solid #2a2620", color: "#7a7268", padding: "3px 8px", borderRadius: 2 }}>{{ low: "低い期待で訪問", normal: "普通の期待で訪問", high: "高い期待で訪問" }[r.preExpect]}</span>
+                        <span style={{ fontSize: 11, background: "#1a1814", border: "1px solid #2a2620", color: "#7a7268", padding: "3px 8px", borderRadius: 2 }}>{{ low: "あまり期待せずに訪問", normal: "普通の期待で訪問", high: "かなり期待して訪問" }[r.preExpect]}</span>
                         <span style={{ fontSize: 11, background: r.result === "Good" ? "#1abc9c22" : r.result === "Below" ? "#e74c3c22" : "#f39c1222", border: `1px solid ${r.result === "Good" ? "#1abc9c44" : r.result === "Below" ? "#e74c3c44" : "#f39c1244"}`, color: r.result === "Good" ? "#1abc9c" : r.result === "Below" ? "#e74c3c" : "#f39c12", padding: "3px 8px", borderRadius: 2 }}>{r.result}</span>
                       </div>
                       {r.comment && <p style={{ fontSize: 13, color: "#9a9090", lineHeight: 1.7 }}>{r.comment}</p>}
@@ -1876,7 +1876,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
       {recommended.length > 0 && (
         <div style={{ marginTop: 36 }}>
           <SectionLabel>あなたへのレコメンド</SectionLabel>
-          <p style={{ fontSize: 12, color: "#5a5450", marginTop: 6, marginBottom: 16 }}>{ut?.label} タイプのマッチ率60%以上・未訪問</p>
+          <p style={{ fontSize: 12, color: "#5a5450", marginTop: 6, marginBottom: 16 }}>{ut?.label} タイプで相性よさそう・まだ行ってないお店</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {recommended.map(s => (
               <button key={s.id} onClick={() => navigate("store", s.id)} style={{ background: "#111012", border: "1px solid #1e1c1a", padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", color: "#e8e0d4", width: "100%" }}>
@@ -1937,13 +1937,13 @@ function UsersPage({ navigate, currentUser, users, reviews, stores, follows }) {
     <div className="fade-in" style={{ maxWidth: 700, margin: "0 auto", padding: "40px 16px" }}>
       <SectionLabel>ユーザー一覧</SectionLabel>
       <p style={{ marginTop: 8, fontSize: 12, color: "#5a5450", marginBottom: 20 }}>
-        {USER_TYPES[currentUser.userType]?.icon} {USER_TYPES[currentUser.userType]?.label} のあなたとの味覚マッチ順に表示中
+        {USER_TYPES[currentUser.userType]?.icon} {USER_TYPES[currentUser.userType]?.label} のあなたとの相性が高い順に表示中
       </p>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
         <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="ユーザー名で検索..." style={{ flex: 1, minWidth: 150, background: "#1a1814", border: "1px solid #2a2620", borderRadius: 3, padding: "10px 14px", color: "#e8e0d4", outline: "none" }} />
         <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: "#1a1814", border: "1px solid #2a2620", color: "#9a9090", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
-          <option value="match">味覚マッチ順</option>
+          <option value="match">相性が高い順</option>
           <option value="reviews">レビュー数順</option>
           <option value="recent">最新レビュー順</option>
         </select>
@@ -1973,7 +1973,7 @@ function UsersPage({ navigate, currentUser, users, reviews, stores, follows }) {
                   </svg>
                   <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: matchColor, fontWeight: 700 }}>{u.tasteMatch}</span>
                 </div>
-                <p style={{ fontSize: 9, color: "#4a4440", marginTop: 2, letterSpacing: "0.05em" }}>MATCH</p>
+                <p style={{ fontSize: 9, color: "#4a4440", marginTop: 2, letterSpacing: "0.05em" }}>相性</p>
               </div>
             </button>
           );
@@ -2277,9 +2277,9 @@ function AdminPage({ navigate, currentUser, stores, setStores, reviews, setRevie
 function ReviewFilterTabs({ filter, setFilter, counts }) {
   const tabs = [
     { key: "all",    label: "すべて", color: "#7a7268" },
-    { key: "beyond", label: "🚀 超越", color: "#1abc9c" },
-    { key: "match",  label: "✓ 一致",  color: "#f39c12" },
-    { key: "below",  label: "↓ 乖離",  color: "#e74c3c" },
+    { key: "beyond", label: "🚀 よかった！", color: "#1abc9c" },
+    { key: "match",  label: "✓ 期待通り",  color: "#f39c12" },
+    { key: "below",  label: "↓ ちょっと残念",  color: "#e74c3c" },
   ];
   return (
     <div style={{ display: "flex", gap: 2, marginBottom: 16, flexWrap: "wrap" }}>
@@ -2325,8 +2325,8 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
                 <span style={{ fontSize: 14, color: "#3a3028" }}>?</span>
               </div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 10, color: "#3a3028", letterSpacing: "0.1em", fontWeight: 600 }}>YOUR MATCH</p>
-                <p style={{ fontSize: 10, color: "#2a2620", marginTop: 1 }}>ログイン後に表示されます</p>
+                <p style={{ fontSize: 10, color: "#3a3028", letterSpacing: "0.1em", fontWeight: 600 }}>相性</p>
+                <p style={{ fontSize: 10, color: "#2a2620", marginTop: 1 }}>ログインすると表示されます</p>
               </div>
             </div>
           )
@@ -2346,7 +2346,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
 
 function ReviewCard({ review, storeName, showStore, currentUserType, navigate, matchResult, isAdmin, onAdminDelete }) {
   const gap = calcGap(review.preExpect, review.result);
-  const expectLabels = { low: "低い期待", normal: "普通の期待", high: "高い期待" };
+  const expectLabels = { low: "あまり期待せず", normal: "普通に期待", high: "かなり期待して" };
   const ut = USER_TYPES[review.userType];
   const isSameType = currentUserType && review.userType === currentUserType;
   return (
@@ -2504,7 +2504,7 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
               <p style={{ fontSize: 13, color: "#e8e0d4", marginBottom: 3 }}>
                 {affinityScore >= 70 ? "味覚の傾向が近いユーザーです" : affinityScore >= 50 ? "一部の好みが重なっています" : "味覚の傾向が異なるユーザーです"}
               </p>
-              <p style={{ fontSize: 11, color: "#5a5450" }}>タイプ親和度 + 訪問店舗のヒット重複度で算出</p>
+              <p style={{ fontSize: 11, color: "#5a5450" }}>タイプの近さ＋訪問したお店の傾向をもとに算出</p>
             </div>
           </div>
         </div>
@@ -2526,9 +2526,9 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
       )}
 
       {/* ── 口コミ一覧（フィルタ付き） ── */}
-      <SectionLabel>口コミ ({targetReviews.length}件)</SectionLabel>
+      <SectionLabel>みんなの感想 ({targetReviews.length}件)</SectionLabel>
       {targetReviews.length === 0 ? (
-        <p style={{ marginTop: 22, color: "#4a4440", fontSize: 14 }}>まだレビューがありません</p>
+        <p style={{ marginTop: 22, color: "#4a4440", fontSize: 14 }}>まだ感想が投稿されていません</p>
       ) : (
         <>
           <div style={{ marginTop: 16 }}>
@@ -2544,7 +2544,7 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
               const store = stores.find(s => s.id === r.storeId);
               if (!store) return null;
               const gap = calcGap(r.preExpect, r.result);
-              const expectLabels = { low: "低い期待", normal: "普通の期待", high: "高い期待" };
+              const expectLabels = { low: "あまり期待せず", normal: "普通に期待", high: "かなり期待して" };
               const ut = USER_TYPES[r.userType];
               // ログイン中のみ自分視点でマッチ率を計算する
               const matchResult = currentUser
@@ -2576,8 +2576,8 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
                             <span style={{ fontSize: 14, color: "#3a3028" }}>?</span>
                           </div>
                           <div>
-                            <p style={{ fontSize: 10, color: "#3a3028", letterSpacing: "0.08em", fontWeight: 600 }}>YOUR MATCH</p>
-                            <p style={{ fontSize: 10, color: "#2a2620", marginTop: 1 }}>ログイン後に表示</p>
+                            <p style={{ fontSize: 10, color: "#3a3028", letterSpacing: "0.08em", fontWeight: 600 }}>相性</p>
+                            <p style={{ fontSize: 10, color: "#2a2620", marginTop: 1 }}>ログインで表示</p>
                           </div>
                         </div>
                       )
