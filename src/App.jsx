@@ -849,6 +849,8 @@ function NavBar({ navigate, currentUser, setCurrentUser, notify }) {
 
 function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
   // ── ログイン時: レコメンド × フォロー新着の混在フィード ──
+  const [feedFilter, setFeedFilter] = useState("all");
+
   if (currentUser) {
     const myFollowingIds = follows?.[currentUser.id] || [];
 
@@ -917,13 +919,35 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
 
     return (
       <div className="fade-in" style={{ maxWidth: 700, margin: "0 auto", padding: "40px 16px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
           <SectionLabel>For You</SectionLabel>
           <button onClick={() => navigate("review-form")} style={{ background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "10px 22px", fontSize: 12, letterSpacing: "0.12em", fontWeight: 600, borderRadius: 2 }}>レビューを書く +</button>
         </div>
 
-        {feed.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "80px 0", color: "#4a4440" }}>
+        {/* フィルタータブ */}
+        <div style={{ display: "flex", gap: 2, marginBottom: 24, flexWrap: "wrap" }}>
+          {[
+            { key: "all",       label: "すべて",               color: "#7a7268" },
+            { key: "recommend", label: "✦ レコメンド",          color: "#c9a96e" },
+            { key: "follow",    label: "● フォロー中",          color: "#7a9acc" },
+            { key: "sametype",  label: "◈ 同タイプ",            color: "#9a7acc" },
+          ].map(t => (
+            <button key={t.key} onClick={() => setFeedFilter(t.key)} style={{
+              background: feedFilter === t.key ? t.color + "22" : "#111012",
+              border: `1px solid ${feedFilter === t.key ? t.color : "#1e1c1a"}`,
+              color: feedFilter === t.key ? t.color : "#5a5450",
+              padding: "6px 14px", fontSize: 11, borderRadius: 2,
+              letterSpacing: "0.06em", transition: "all 0.15s",
+            }}>{t.label}</button>
+          ))}
+        </div>
+
+        {(() => {
+          const visibleFeed = feedFilter === "all"
+            ? feed
+            : feed.filter(item => item.type === feedFilter);
+          return visibleFeed.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "60px 0", color: "#4a4440" }}>
             <p style={{ fontSize: 36, marginBottom: 14 }}>🍽️</p>
             <p style={{ fontSize: 14, marginBottom: 8 }}>フィードがまだありません</p>
             <p style={{ fontSize: 12, color: "#3a3028", lineHeight: 1.9 }}>
@@ -936,7 +960,7 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {feed.map((item, i) => {
+            {visibleFeed.map((item, i) => {
               if (item.type === "recommend") {
                 const store = item.data;
                 return (
@@ -958,7 +982,8 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
               }
             })}
           </div>
-        )}
+        );
+        })()}
       </div>
     );
   }
