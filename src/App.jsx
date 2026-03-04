@@ -968,9 +968,15 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users, wish
         </div>
 
         {(() => {
-          const visibleFeed = feedFilter === "all"
-            ? feed
-            : feed.filter(item => item.type === feedFilter);
+          // 「行きたい」タブはwishlistIds全件を直接表示（訪問済みも含む）
+          const wishlistStores = myWishlistIds
+            .map(sid => stores.find(s => s.id === sid))
+            .filter(Boolean);
+          const visibleFeed = feedFilter === "wishlist"
+            ? wishlistStores.map(s => ({ type: "wishlist", data: s }))
+            : feedFilter === "all"
+              ? feed
+              : feed.filter(item => item.type === feedFilter);
           return visibleFeed.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#9a9088" }}>
             <p style={{ fontSize: 36, marginBottom: 14 }}>🍽️</p>
@@ -1739,6 +1745,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
   if (!currentUser) { navigate("login"); return null; }
   const myReviews = reviews.filter(r => r.userId === currentUser.id);
   const [reviewFilter, setReviewFilter] = useState("all");
+  const [contentTab, setContentTab] = useState("reviews"); // "reviews" | "wishlist"
   const [followTab, setFollowTab] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(currentUser.name);
@@ -1895,57 +1902,141 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, marginBottom: 32 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, marginBottom: 24 }}>
         {[{ label: "投稿数", key: "all", value: reviewCounts.all }, { label: "よかった！", key: "beyond", value: reviewCounts.beyond }, { label: "残念だった", key: "below", value: reviewCounts.below }].map(({ label, key, value }) => (
-          <button key={key} onClick={() => setReviewFilter(key)} style={{ background: reviewFilter === key ? "#f5f0e8" : "#ffffff", padding: "18px", textAlign: "center", border: `1px solid ${reviewFilter === key ? "#c9a96e44" : "#c9a96e44"}`, color: "#2c2420", cursor: "pointer" }}>
+          <button key={key} onClick={() => { setReviewFilter(key); setContentTab("reviews"); }} style={{ background: contentTab === "reviews" && reviewFilter === key ? "#f5f0e8" : "#ffffff", padding: "18px", textAlign: "center", border: "1px solid #c9a96e44", color: "#2c2420", cursor: "pointer" }}>
             <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, color: "#c9a96e", marginBottom: 4 }}>{value}</p>
             <p style={{ fontSize: 11, color: "#7a7268", letterSpacing: "0.1em" }}>{label}</p>
           </button>
         ))}
       </div>
 
-      <div style={{ marginBottom: 36 }}>
-        <SectionLabel>投稿したレビュー</SectionLabel>
-        {myReviews.length === 0 ? (
-          <div style={{ marginTop: 22, textAlign: "center", padding: "44px 0" }}>
-            <p style={{ fontSize: 14, color: "#9a9088", marginBottom: 18 }}>まだ感想が投稿されていません</p>
-            <button onClick={() => navigate("review-form")} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "12px 26px", fontSize: 13, fontWeight: 600 }}>最初のレビューを書く</button>
-          </div>
-        ) : (
-          <>
-            <div style={{ marginTop: 16 }}>
-              <ReviewFilterTabs filter={reviewFilter} setFilter={setReviewFilter} counts={reviewCounts} />
+      {/* ── コンテンツタブ ── */}
+      {(() => {
+        const myWishlistIds = wishlists?.[currentUser.id] || [];
+        const wishStores = myWishlistIds.map(sid => stores.find(s => s.id === sid)).filter(Boolean);
+        return (
+          <div style={{ marginBottom: 36 }}>
+            {/* タブヘッダー */}
+            <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid #c9a96e33" }}>
+              <button
+                onClick={() => setContentTab("reviews")}
+                style={{
+                  background: "none", border: "none", borderBottom: `2px solid ${contentTab === "reviews" ? "#c9a96e" : "transparent"}`,
+                  color: contentTab === "reviews" ? "#c9a96e" : "#7a7268",
+                  padding: "10px 18px", fontSize: 12, fontWeight: contentTab === "reviews" ? 600 : 400,
+                  letterSpacing: "0.08em", transition: "all 0.15s", marginBottom: -1,
+                }}
+              >
+                📝 レビュー ({myReviews.length})
+              </button>
+              <button
+                onClick={() => setContentTab("wishlist")}
+                style={{
+                  background: "none", border: "none", borderBottom: `2px solid ${contentTab === "wishlist" ? "#e67e22" : "transparent"}`,
+                  color: contentTab === "wishlist" ? "#e67e22" : "#7a7268",
+                  padding: "10px 18px", fontSize: 12, fontWeight: contentTab === "wishlist" ? 600 : 400,
+                  letterSpacing: "0.08em", transition: "all 0.15s", marginBottom: -1,
+                }}
+              >
+                🍽️ 行きたいリスト ({wishStores.length})
+              </button>
             </div>
-            {filteredReviews.length === 0 ? (
-              <p style={{ padding: "24px 0", textAlign: "center", color: "#9a9088", fontSize: 13 }}>該当するレビューがありません</p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {filteredReviews.map(r => {
-                  const store = stores.find(s => s.id === r.storeId);
-                  return (
-                    <div key={r.id} style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "16px 20px" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                        <button onClick={() => navigate("store", r.storeId)} style={{ background: "none", border: "none", padding: 0, display: "flex", alignItems: "center", gap: 8, color: "#2c2420" }}>
-                          <span style={{ fontSize: 18 }}>{store?.image}</span>
-                          <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "0.04em" }}>{store?.name || "不明な店舗"}</span>
-                          <span style={{ fontSize: 11, color: "#7a7268" }}>{store?.area} / {store?.category}</span>
-                        </button>
-                        <button onClick={() => handleDeleteReview(r.id)} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2, flexShrink: 0 }}>削除</button>
-                      </div>
-                      <div style={{ marginBottom: 8 }}><span style={{ fontSize: 11, color: "#7a7268" }}>{r.date}</span></div>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, background: "#f5f0e8", border: "1px solid #c9a96e44", color: "#7a7268", padding: "3px 8px", borderRadius: 2 }}>{{ low: "あまり期待せずに訪問", normal: "普通の期待で訪問", high: "かなり期待して訪問" }[r.preExpect]}</span>
-                        <span style={{ fontSize: 11, background: r.result === "Good" ? "#1abc9c22" : r.result === "Below" ? "#e74c3c22" : "#f39c1222", border: `1px solid ${r.result === "Good" ? "#1abc9c44" : r.result === "Below" ? "#e74c3c44" : "#f39c1244"}`, color: r.result === "Good" ? "#1abc9c" : r.result === "Below" ? "#e74c3c" : "#f39c12", padding: "3px 8px", borderRadius: 2 }}>{r.result}</span>
-                      </div>
-                      {r.comment && <p style={{ fontSize: 13, color: "#8a8278", lineHeight: 1.7 }}>{r.comment}</p>}
+
+            {/* レビュータブ */}
+            {contentTab === "reviews" && (
+              myReviews.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "44px 0" }}>
+                  <p style={{ fontSize: 14, color: "#9a9088", marginBottom: 18 }}>まだ感想が投稿されていません</p>
+                  <button onClick={() => navigate("review-form")} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "12px 26px", fontSize: 13, fontWeight: 600 }}>最初のレビューを書く</button>
+                </div>
+              ) : (
+                <>
+                  <ReviewFilterTabs filter={reviewFilter} setFilter={setReviewFilter} counts={reviewCounts} />
+                  {filteredReviews.length === 0 ? (
+                    <p style={{ padding: "24px 0", textAlign: "center", color: "#9a9088", fontSize: 13 }}>該当するレビューがありません</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      {filteredReviews.map(r => {
+                        const store = stores.find(s => s.id === r.storeId);
+                        return (
+                          <div key={r.id} style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "16px 20px" }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                              <button onClick={() => navigate("store", r.storeId)} style={{ background: "none", border: "none", padding: 0, display: "flex", alignItems: "center", gap: 8, color: "#2c2420" }}>
+                                <span style={{ fontSize: 18 }}>{store?.image}</span>
+                                <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "0.04em" }}>{store?.name || "不明な店舗"}</span>
+                                <span style={{ fontSize: 11, color: "#7a7268" }}>{store?.area} / {store?.category}</span>
+                              </button>
+                              <button onClick={() => handleDeleteReview(r.id)} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2, flexShrink: 0 }}>削除</button>
+                            </div>
+                            <div style={{ marginBottom: 8 }}><span style={{ fontSize: 11, color: "#7a7268" }}>{r.date}</span></div>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                              <span style={{ fontSize: 11, background: "#f5f0e8", border: "1px solid #c9a96e44", color: "#7a7268", padding: "3px 8px", borderRadius: 2 }}>{{ low: "あまり期待せずに訪問", normal: "普通の期待で訪問", high: "かなり期待して訪問" }[r.preExpect]}</span>
+                              <span style={{ fontSize: 11, background: r.result === "Good" ? "#1abc9c22" : r.result === "Below" ? "#e74c3c22" : "#f39c1222", border: `1px solid ${r.result === "Good" ? "#1abc9c44" : r.result === "Below" ? "#e74c3c44" : "#f39c1244"}`, color: r.result === "Good" ? "#1abc9c" : r.result === "Below" ? "#e74c3c" : "#f39c12", padding: "3px 8px", borderRadius: 2 }}>{r.result}</span>
+                            </div>
+                            {r.comment && <p style={{ fontSize: 13, color: "#8a8278", lineHeight: 1.7 }}>{r.comment}</p>}
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+                </>
+              )
             )}
-          </>
-        )}
-      </div>
+
+            {/* ウィッシュリストタブ */}
+            {contentTab === "wishlist" && (
+              wishStores.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "44px 0" }}>
+                  <p style={{ fontSize: 36, marginBottom: 14 }}>🍽️</p>
+                  <p style={{ fontSize: 14, color: "#9a9088", marginBottom: 8 }}>気になるお店を保存しましょう</p>
+                  <p style={{ fontSize: 12, color: "#c4b9ac", lineHeight: 1.9, marginBottom: 20 }}>
+                    店舗カードや店舗ページの 🤍 ボタンで<br />行ってみたいお店を保存できます
+                  </p>
+                  <button onClick={() => navigate("search")} style={{ background: "none", border: "1px solid #e67e2244", color: "#e67e22", padding: "10px 22px", fontSize: 12, borderRadius: 2 }}>店舗を探す →</button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {wishStores.map(s => {
+                    const matchResult = calcMatchScore(s.id, currentUser, reviews, stores);
+                    const isVisited = visitedIds.has(s.id);
+                    return (
+                      <div key={s.id} style={{ background: "#ffffff", border: `1px solid ${isVisited ? "#c9a96e44" : "#e67e2233"}`, borderRadius: 3, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 }}>
+                        <button onClick={() => navigate("store", s.id)} style={{ background: "none", border: "none", display: "flex", alignItems: "center", gap: 14, flex: 1, textAlign: "left", color: "#2c2420", padding: 0 }}>
+                          <span style={{ fontSize: 24 }}>{s.image}</span>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontSize: 14, letterSpacing: "0.04em", marginBottom: 2 }}>{s.name}</p>
+                            <p style={{ fontSize: 12, color: "#7a7268" }}>{s.area} / {s.category}</p>
+                            {isVisited && <p style={{ fontSize: 10, color: "#1abc9c", marginTop: 2 }}>✓ 訪問済み・レビュー済み</p>}
+                          </div>
+                          {matchResult && <MatchBadge matchResult={matchResult} />}
+                        </button>
+                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                          {!isVisited ? (
+                            <button onClick={() => navigate("review-form", s.id)} style={{ background: "#e67e22", border: "none", color: "#fff", padding: "7px 14px", fontSize: 11, borderRadius: 2, fontWeight: 600 }}>
+                              レビュー →
+                            </button>
+                          ) : (
+                            <button onClick={() => navigate("store", s.id)} style={{ background: "none", border: "1px solid #1abc9c44", color: "#1abc9c", padding: "7px 14px", fontSize: 11, borderRadius: 2 }}>
+                              レビュー済み
+                            </button>
+                          )}
+                          <button onClick={async () => {
+                            await supabase.from("wishlists").delete().eq("user_id", currentUser.id).eq("store_id", s.id);
+                            setWishlists(prev => ({ ...prev, [currentUser.id]: (prev[currentUser.id] || []).filter(id => id !== s.id) }));
+                          }} style={{ background: "none", border: "1px solid #c9a96e44", color: "#9a9088", padding: "7px 10px", fontSize: 11, borderRadius: 2 }}>
+                            削除
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            )}
+          </div>
+        );
+      })()}
 
       {recommended.length > 0 && (
         <div style={{ marginTop: 36 }}>
@@ -1963,52 +2054,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
         </div>
       )}
 
-      {/* ── 行ってみたいリスト ── */}
-      {(() => {
-        const myWishlistIds = wishlists?.[currentUser.id] || [];
-        const wishStores = myWishlistIds
-          .map(sid => stores.find(s => s.id === sid))
-          .filter(Boolean);
-        if (wishStores.length === 0) return null;
-        return (
-          <div style={{ marginTop: 36 }}>
-            <SectionLabel>行ってみたいリスト</SectionLabel>
-            <p style={{ fontSize: 12, color: "#7a7268", marginTop: 6, marginBottom: 16 }}>🍽️ {wishStores.length}件のお店を保存しています</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {wishStores.map(s => {
-                const matchResult = calcMatchScore(s.id, currentUser, reviews, stores);
-                const isVisited = visitedIds.has(s.id);
-                return (
-                  <div key={s.id} style={{ background: "#ffffff", border: "1px solid #e67e2233", borderRadius: 3, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 }}>
-                    <button onClick={() => navigate("store", s.id)} style={{ background: "none", border: "none", display: "flex", alignItems: "center", gap: 14, flex: 1, textAlign: "left", color: "#2c2420", padding: 0 }}>
-                      <span style={{ fontSize: 24 }}>{s.image}</span>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: 14, letterSpacing: "0.04em", marginBottom: 2 }}>{s.name}</p>
-                        <p style={{ fontSize: 12, color: "#7a7268" }}>{s.area} / {s.category}</p>
-                        {isVisited && <p style={{ fontSize: 10, color: "#1abc9c", marginTop: 2 }}>✓ 訪問済み</p>}
-                      </div>
-                      {matchResult && <MatchBadge matchResult={matchResult} />}
-                    </button>
-                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      {!isVisited && (
-                        <button onClick={() => navigate("review-form", s.id)} style={{ background: "#e67e22", border: "none", color: "#fff", padding: "6px 12px", fontSize: 11, borderRadius: 2, fontWeight: 600 }}>
-                          レビュー →
-                        </button>
-                      )}
-                      <button onClick={async () => {
-                        await supabase.from("wishlists").delete().eq("user_id", currentUser.id).eq("store_id", s.id);
-                        setWishlists(prev => ({ ...prev, [currentUser.id]: (prev[currentUser.id] || []).filter(id => id !== s.id) }));
-                      }} style={{ background: "none", border: "1px solid #c9a96e44", color: "#9a9088", padding: "6px 10px", fontSize: 11, borderRadius: 2 }}>
-                        削除
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
+
 
 
     </div>
