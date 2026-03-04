@@ -670,7 +670,7 @@ function MatchBadge({ matchResult, compact }) {
       <div style={{ width: 36, height: 36, position: "relative", flexShrink: 0 }}>
         <svg viewBox="0 0 36 36" style={{ width: 36, height: 36, transform: svgRotation }}>
           {/* ベースリング */}
-          <circle cx="18" cy="18" r="14" fill="none" stroke="#e8e2d8" strokeWidth="3" />
+          <circle cx="18" cy="18" r="14" fill="none" stroke="#c9a96e33" strokeWidth="3" />
           {/* マイナスの場合は全周うっすら赤で警告感を出す */}
           {isNegative && (
             <circle cx="18" cy="18" r="14" fill="none" stroke={color} strokeWidth="3" opacity="0.15"
@@ -934,7 +934,7 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users }) {
           ].map(t => (
             <button key={t.key} onClick={() => setFeedFilter(t.key)} style={{
               background: feedFilter === t.key ? t.color + "22" : "#ffffff",
-              border: `1px solid ${feedFilter === t.key ? t.color : "#e8e2d8"}`,
+              border: `1px solid ${feedFilter === t.key ? t.color : "#c9a96e44"}`,
               color: feedFilter === t.key ? t.color : "#7a7268",
               padding: "6px 14px", fontSize: 11, borderRadius: 2,
               letterSpacing: "0.06em", transition: "all 0.15s",
@@ -1237,7 +1237,7 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
               </div>
             ))}
           </div>
-          <div style={{ marginTop: 14, height: 4, background: "#e8e2d8", borderRadius: 2, overflow: "hidden", display: "flex" }}>
+          <div style={{ marginTop: 14, height: 4, background: "#c9a96e22", borderRadius: 2, overflow: "hidden", display: "flex" }}>
             <div style={{ width: `${stats.beyond / stats.total * 100}%`, background: "#1abc9c" }} />
             <div style={{ width: `${stats.match / stats.total * 100}%`, background: "#f39c12" }} />
             <div style={{ width: `${stats.below / stats.total * 100}%`, background: "#e74c3c" }} />
@@ -1282,7 +1282,7 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
                       <span style={{ fontSize: 10, color: "#c4b9ac", width: 24, textAlign: "right" }}>{t.count}件</span>
                     </div>
                     {/* ヒット率バー（緑）＋ミス率バー（赤）を重ねて表示 */}
-                    <div style={{ marginLeft: 28, height: 4, background: "#e8e2d8", borderRadius: 2, overflow: "hidden", display: "flex" }}>
+                    <div style={{ marginLeft: 28, height: 4, background: "#c9a96e22", borderRadius: 2, overflow: "hidden", display: "flex" }}>
                       <div style={{ width: `${t.hitRate}%`, height: "100%", background: isMe ? hitColor : "#c4b9ac", transition: "width 0.4s" }} />
                       <div style={{ width: `${t.missRate}%`, height: "100%", background: "#e74c3c55" }} />
                     </div>
@@ -1309,7 +1309,7 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
                 width: 36, height: 20, borderRadius: 10, flexShrink: 0,
                 background: sameTypeOnly ? USER_TYPES[currentUser.userType]?.color : "#d8d0c4",
                 position: "relative", transition: "background 0.2s",
-                border: `1px solid ${sameTypeOnly ? USER_TYPES[currentUser.userType]?.color : "#c4b9ac"}`,
+                border: `1px solid ${sameTypeOnly ? USER_TYPES[currentUser.userType]?.color : "#c9a96e33"}`,
               }}
             >
               <div style={{
@@ -1522,7 +1522,7 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
           <SectionLabel>新規登録</SectionLabel>
           <div style={{ display: "flex", gap: 4, marginTop: 18, marginBottom: 28 }}>
             {[1, 2].map(n => (
-              <div key={n} style={{ flex: 1, height: 2, background: step >= n ? "#c9a96e" : "#e8e2d8", transition: "background 0.3s" }} />
+              <div key={n} style={{ flex: 1, height: 2, background: step >= n ? "#c9a96e" : "#c9a96e33", transition: "background 0.3s" }} />
             ))}
           </div>
         </>
@@ -1823,7 +1823,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, marginBottom: 32 }}>
         {[{ label: "投稿数", key: "all", value: reviewCounts.all }, { label: "よかった！", key: "beyond", value: reviewCounts.beyond }, { label: "残念だった", key: "below", value: reviewCounts.below }].map(({ label, key, value }) => (
-          <button key={key} onClick={() => setReviewFilter(key)} style={{ background: reviewFilter === key ? "#f5f0e8" : "#ffffff", padding: "18px", textAlign: "center", border: `1px solid ${reviewFilter === key ? "#c9a96e44" : "#e8e2d8"}`, color: "#2c2420", cursor: "pointer" }}>
+          <button key={key} onClick={() => setReviewFilter(key)} style={{ background: reviewFilter === key ? "#f5f0e8" : "#ffffff", padding: "18px", textAlign: "center", border: `1px solid ${reviewFilter === key ? "#c9a96e44" : "#c9a96e44"}`, color: "#2c2420", cursor: "pointer" }}>
             <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, color: "#c9a96e", marginBottom: 4 }}>{value}</p>
             <p style={{ fontSize: 11, color: "#7a7268", letterSpacing: "0.1em" }}>{label}</p>
           </button>
@@ -1968,7 +1968,7 @@ function UsersPage({ navigate, currentUser, users, reviews, stores, follows }) {
               <div style={{ textAlign: "center", flexShrink: 0 }}>
                 <div style={{ position: "relative", width: 40, height: 40 }}>
                   <svg viewBox="0 0 36 36" style={{ width: 40, height: 40, transform: "rotate(-90deg)" }}>
-                    <circle cx="18" cy="18" r="14" fill="none" stroke="#e8e2d8" strokeWidth="3" />
+                    <circle cx="18" cy="18" r="14" fill="none" stroke="#c9a96e33" strokeWidth="3" />
                     <circle cx="18" cy="18" r="14" fill="none" stroke={matchColor} strokeWidth="3" strokeDasharray={`${(u.tasteMatch / 100) * 87.96} 87.96`} strokeLinecap="round" />
                   </svg>
                   <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: matchColor, fontWeight: 700 }}>{u.tasteMatch}</span>
@@ -2286,7 +2286,7 @@ function ReviewFilterTabs({ filter, setFilter, counts }) {
       {tabs.map(t => (
         <button key={t.key} onClick={() => setFilter(t.key)} style={{
           background: filter === t.key ? t.color + "22" : "#ffffff",
-          border: `1px solid ${filter === t.key ? t.color : "#e8e2d8"}`,
+          border: `1px solid ${filter === t.key ? t.color : "#c9a96e44"}`,
           color: filter === t.key ? t.color : "#7a7268",
           padding: "6px 14px", fontSize: 12, borderRadius: 2, transition: "all 0.15s",
         }}>
@@ -2350,7 +2350,7 @@ function ReviewCard({ review, storeName, showStore, currentUserType, navigate, m
   const ut = USER_TYPES[review.userType];
   const isSameType = currentUserType && review.userType === currentUserType;
   return (
-    <div style={{ background: "#ffffff", border: `1px solid ${isSameType ? ut?.color + "44" : "#e8e2d8"}`, padding: "16px 20px" }}>
+    <div style={{ background: "#ffffff", border: `1px solid ${isSameType ? ut?.color + "44" : "#c9a96e44"}`, padding: "16px 20px" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -2490,7 +2490,7 @@ function UserProfilePage({ navigate, currentUser, users, reviews, stores, follow
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ position: "relative", width: 48, height: 48, flexShrink: 0 }}>
               <svg viewBox="0 0 36 36" style={{ width: 48, height: 48, transform: "rotate(-90deg)" }}>
-                <circle cx="18" cy="18" r="14" fill="none" stroke="#e8e2d8" strokeWidth="3" />
+                <circle cx="18" cy="18" r="14" fill="none" stroke="#c9a96e33" strokeWidth="3" />
                 <circle cx="18" cy="18" r="14" fill="none"
                   stroke={affinityScore >= 70 ? "#1abc9c" : affinityScore >= 50 ? "#f39c12" : "#7a7268"}
                   strokeWidth="3"
