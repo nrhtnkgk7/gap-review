@@ -814,6 +814,7 @@ export default function App() {
         {page === "register" && <RegisterPage {...props} stores={stores} />}
         {page === "profile" && <ProfilePage {...props} setReviews={setReviews} setFollows={setFollows} />}
         {page === "request-store" && <RequestStorePage {...props} />}
+        {page === "add-store" && <AddStorePage {...props} />}
         {page === "admin" && <AdminPage {...props} />}
         {page === "user-profile" && <UserProfilePage {...props} />}
       </div>
@@ -831,6 +832,7 @@ function NavBar({ navigate, currentUser, setCurrentUser, notify }) {
         <button onClick={() => navigate("search")} style={{ background: "none", border: "none", color: "#9a9090", fontSize: 13 }}>一覧</button>
         {currentUser ? (
           <>
+            <button onClick={() => navigate("add-store")} style={{ background: "none", border: "none", color: "#9a9090", fontSize: 13 }}>店舗追加</button>
             <button onClick={() => navigate("profile")} style={{ background: "none", border: "none", color: "#9a9090", fontSize: 13, maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser.name}</button>
             {currentUser.isAdmin && <button onClick={() => navigate("admin")} style={{ background: "none", border: "1px solid #c9a96e", color: "#c9a96e", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>管理</button>}
             <button onClick={logout} style={{ background: "none", border: "1px solid #2a2620", color: "#5a5450", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>ログアウト</button>
@@ -1661,6 +1663,115 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
             )}
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── AddStorePage: 一般ユーザー向け店舗登録 ────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+function AddStorePage({ navigate, currentUser, stores, setStores, notify }) {
+  if (!currentUser) { navigate("login"); return null; }
+
+  const CATEGORY_OPTIONS = [
+    { label: "鮨", icon: "🍣" }, { label: "和食・割烹", icon: "🍱" },
+    { label: "焼き鳥・鳥料理", icon: "🍗" }, { label: "フレンチ", icon: "🥂" },
+    { label: "イタリアン", icon: "🍝" }, { label: "中華", icon: "🥢" },
+    { label: "イノベーティブ", icon: "✨" }, { label: "焼肉・肉料理", icon: "🥩" },
+    { label: "天ぷら", icon: "🍤" }, { label: "スパニッシュ", icon: "🥘" },
+    { label: "アジア料理", icon: "🍜" }, { label: "デザート", icon: "🍮" },
+    { label: "バー", icon: "🍸" }, { label: "麺類", icon: "🍜" },
+    { label: "他和食", icon: "🍶" }, { label: "その他", icon: "🍽️" },
+  ];
+  const PRICE_OPTIONS = ["¥", "¥¥", "¥¥¥", "¥¥¥¥"];
+
+  const [form, setForm] = useState({ name: "", category: "", area: "", priceRange: "", description: "", image: "" });
+  const update = (key, value) => setForm(p => ({ ...p, [key]: value }));
+
+  const handleCategoryChange = (cat) => {
+    const found = CATEGORY_OPTIONS.find(c => c.label === cat);
+    setForm(p => ({ ...p, category: cat, image: found ? found.icon : p.image }));
+  };
+
+  const handleSubmit = async () => {
+    if (!form.name.trim()) { notify("店舗名を入力してください", "error"); return; }
+    if (!form.category) { notify("カテゴリを選択してください", "error"); return; }
+    if (!form.area.trim()) { notify("エリアを入力してください", "error"); return; }
+    if (!form.priceRange) { notify("価格帯を選択してください", "error"); return; }
+    if (!form.description.trim()) { notify("説明を入力してください", "error"); return; }
+    if (!form.image) { notify("絵文字を選択してください", "error"); return; }
+
+    const { data, error } = await supabase.from("stores").insert({
+      name: form.name.trim(), category: form.category, area: form.area.trim(),
+      price_range: form.priceRange, description: form.description.trim(), image: form.image
+    }).select().single();
+
+    if (error) { notify("登録に失敗しました", "error"); return; }
+    setStores(prev => [...prev, { id: data.id, name: data.name, category: data.category, area: data.area, priceRange: data.price_range, description: data.description, image: data.image }]);
+    notify("店舗を登録しました");
+    navigate("store", data.id);
+  };
+
+  const allFilled = form.name.trim() && form.category && form.area.trim() && form.priceRange && form.description.trim() && form.image;
+  const selectStyle = { ...inputStyle, cursor: "pointer" };
+
+  return (
+    <div className="fade-in" style={{ maxWidth: 520, margin: "0 auto", padding: "44px 16px" }}>
+      <SectionLabel>店舗を追加する</SectionLabel>
+      <p style={{ marginTop: 8, fontSize: 13, color: "#5a5450", lineHeight: 1.8 }}>新しい店舗を登録できます。全ての項目を入力してください。</p>
+      <div style={{ marginTop: 36, display: "flex", flexDirection: "column", gap: 22 }}>
+        <FormSection label="店舗名" required>
+          <input value={form.name} onChange={e => update("name", e.target.value)} placeholder="例：鮨 銀座" style={inputStyle} />
+        </FormSection>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <FormSection label="カテゴリ" required>
+            <select value={form.category} onChange={e => handleCategoryChange(e.target.value)} style={selectStyle}>
+              <option value="">選択してください</option>
+              {CATEGORY_OPTIONS.map(c => <option key={c.label} value={c.label}>{c.icon} {c.label}</option>)}
+            </select>
+          </FormSection>
+          <FormSection label="絵文字" required>
+            <select value={form.image} onChange={e => update("image", e.target.value)} style={{ ...selectStyle, fontSize: 20 }}>
+              <option value="">選択</option>
+              {CATEGORY_OPTIONS.map(c => <option key={c.label + c.icon} value={c.icon}>{c.icon} {c.label}</option>)}
+            </select>
+          </FormSection>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <FormSection label="エリア" required>
+            <input value={form.area} onChange={e => update("area", e.target.value)} placeholder="例：銀座・渋谷" style={inputStyle} />
+          </FormSection>
+          <FormSection label="価格帯" required>
+            <select value={form.priceRange} onChange={e => update("priceRange", e.target.value)} style={selectStyle}>
+              <option value="">選択</option>
+              {PRICE_OPTIONS.map(v => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </FormSection>
+        </div>
+        <FormSection label="説明" required>
+          <textarea value={form.description} onChange={e => update("description", e.target.value)} rows={3} placeholder="お店の特徴を簡潔に記載してください" style={{ ...inputStyle, resize: "vertical" }} />
+        </FormSection>
+        {allFilled && (
+          <div style={{ background: "#111012", border: "1px solid #1e1c1a", borderRadius: 3, padding: "16px" }}>
+            <p style={{ fontSize: 10, color: "#5a5450", letterSpacing: "0.15em", marginBottom: 10, textTransform: "uppercase" }}>プレビュー</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontSize: 28 }}>{form.image}</span>
+              <div>
+                <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, fontWeight: 400, letterSpacing: "0.04em" }}>{form.name}</p>
+                <p style={{ fontSize: 11, color: "#5a5450", marginTop: 3 }}>{form.area} / {form.category} / {form.priceRange}</p>
+              </div>
+            </div>
+            <p style={{ fontSize: 12, color: "#7a7268", lineHeight: 1.8, marginTop: 10 }}>{form.description}</p>
+          </div>
+        )}
+        <button onClick={handleSubmit} style={{
+          background: allFilled ? "#c9a96e" : "#2a2620", border: "none",
+          color: allFilled ? "#0c0c0e" : "#5a5450", padding: "16px", fontSize: 14,
+          letterSpacing: "0.12em", fontWeight: 600, borderRadius: 2,
+          cursor: allFilled ? "pointer" : "default", transition: "all 0.2s",
+        }}>登録する</button>
       </div>
     </div>
   );
