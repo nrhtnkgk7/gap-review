@@ -1494,6 +1494,21 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
   const myReviews = reviews.filter(r => r.userId === currentUser.id);
   const [reviewFilter, setReviewFilter] = useState("all");
   const [followTab, setFollowTab] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(currentUser.name);
+  const [editAxis1, setEditAxis1] = useState(currentUser.userType?.[0] || "");
+  const [editAxis2, setEditAxis2] = useState(currentUser.userType?.[1] || "");
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) { notify("ユーザーネームを入力してください", "error"); return; }
+    if (!editAxis1 || !editAxis2) { notify("タイプを選択してください", "error"); return; }
+    const newType = editAxis1 + editAxis2;
+    const { error } = await supabase.from("profiles").update({ name: editName.trim(), user_type: newType }).eq("id", currentUser.id);
+    if (error) { notify("更新に失敗しました", "error"); return; }
+    setCurrentUser(prev => ({ ...prev, name: editName.trim(), userType: newType, user_type: newType }));
+    setIsEditing(false);
+    notify("プロフィールを更新しました");
+  };
 
   const handleDeleteReview = async (reviewId) => {
     if (!window.confirm("このレビューを削除しますか？")) return;
@@ -1569,12 +1584,57 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
       <div style={{ display: "flex", alignItems: "flex-start", gap: 18, marginBottom: 20, flexWrap: "wrap" }}>
         <div style={{ width: 58, height: 58, background: ut?.color + "22", border: `1px solid ${ut?.color}44`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{ut?.icon}</div>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5, flexWrap: "wrap" }}>
-            <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 400, letterSpacing: "0.04em" }}>{currentUser.name}</h1>
-            <button onClick={handleShare} style={{ background: "none", border: "1px solid #2a2620", color: "#5a5450", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>🔗 シェア</button>
-          </div>
-          <p style={{ fontSize: 12, color: ut?.color, letterSpacing: "0.1em", marginBottom: 3 }}>{ut?.label}</p>
-          <p style={{ fontSize: 12, color: "#5a5450" }}>{ut?.desc}</p>
+          {isEditing ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <FormSection label="ユーザーネーム">
+                <input value={editName} onChange={e => setEditName(e.target.value)} style={inputStyle} />
+              </FormSection>
+              <FormSection label="軸① 味の方向性">
+                <div style={{ display: "flex", gap: 8 }}>
+                  {[["B", "Bold（濃い味）", "🔥"], ["D", "Delicate（繊細）", "🌿"]].map(([v, l, icon]) => (
+                    <button key={v} onClick={() => setEditAxis1(v)} style={{ flex: 1, background: editAxis1 === v ? "#c9a96e22" : "#1a1814", border: `1px solid ${editAxis1 === v ? "#c9a96e" : "#2a2620"}`, color: editAxis1 === v ? "#c9a96e" : "#9a9090", padding: "12px 8px", borderRadius: 3, transition: "all 0.2s" }}>
+                      <p style={{ fontSize: 18, marginBottom: 4 }}>{icon}</p>
+                      <p style={{ fontSize: 11, fontWeight: editAxis1 === v ? 600 : 400 }}>{l}</p>
+                    </button>
+                  ))}
+                </div>
+              </FormSection>
+              <FormSection label="軸② 体験志向">
+                <div style={{ display: "flex", gap: 8 }}>
+                  {[["I", "素材重視", "🥩"], ["C", "設計・バランス重視", "⚖️"]].map(([v, l, icon]) => (
+                    <button key={v} onClick={() => setEditAxis2(v)} style={{ flex: 1, background: editAxis2 === v ? "#c9a96e22" : "#1a1814", border: `1px solid ${editAxis2 === v ? "#c9a96e" : "#2a2620"}`, color: editAxis2 === v ? "#c9a96e" : "#9a9090", padding: "12px 8px", borderRadius: 3, transition: "all 0.2s" }}>
+                      <p style={{ fontSize: 18, marginBottom: 4 }}>{icon}</p>
+                      <p style={{ fontSize: 11, fontWeight: editAxis2 === v ? 600 : 400 }}>{l}</p>
+                    </button>
+                  ))}
+                </div>
+              </FormSection>
+              {editAxis1 && editAxis2 && (() => {
+                const previewType = USER_TYPES[editAxis1 + editAxis2];
+                return previewType ? (
+                  <div style={{ background: "#1a1814", border: `1px solid ${previewType.color}44`, borderRadius: 4, padding: "12px 16px", textAlign: "center" }}>
+                    <span style={{ fontSize: 20, marginRight: 8 }}>{previewType.icon}</span>
+                    <span style={{ fontSize: 13, color: previewType.color, fontWeight: 600 }}>{previewType.label}</span>
+                    <p style={{ fontSize: 11, color: "#5a5450", marginTop: 4 }}>{previewType.desc}</p>
+                  </div>
+                ) : null;
+              })()}
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => { setIsEditing(false); setEditName(currentUser.name); setEditAxis1(currentUser.userType?.[0] || ""); setEditAxis2(currentUser.userType?.[1] || ""); }} style={{ flex: 1, background: "none", border: "1px solid #2a2620", color: "#9a9090", padding: "12px", fontSize: 12, borderRadius: 2 }}>キャンセル</button>
+                <button onClick={handleSaveProfile} style={{ flex: 2, background: "#c9a96e", border: "none", color: "#0c0c0e", padding: "12px", fontSize: 12, fontWeight: 600, borderRadius: 2 }}>保存する</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5, flexWrap: "wrap" }}>
+                <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 400, letterSpacing: "0.04em" }}>{currentUser.name}</h1>
+                <button onClick={() => setIsEditing(true)} style={{ background: "none", border: "1px solid #2a2620", color: "#5a5450", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>✏️ 編集</button>
+                <button onClick={handleShare} style={{ background: "none", border: "1px solid #2a2620", color: "#5a5450", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>🔗 シェア</button>
+              </div>
+              <p style={{ fontSize: 12, color: ut?.color, letterSpacing: "0.1em", marginBottom: 3 }}>{ut?.label}</p>
+              <p style={{ fontSize: 12, color: "#5a5450" }}>{ut?.desc}</p>
+            </>
+          )}
         </div>
       </div>
 
