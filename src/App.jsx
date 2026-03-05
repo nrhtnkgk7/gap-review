@@ -778,9 +778,34 @@ export default function App() {
       })
       .subscribe();
 
+    // reviews のリアルタイム同期（ユーザー名変更・新規投稿・削除を全クライアントに反映）
+    const reviewsChannel = supabase
+      .channel("reviews-realtime")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "reviews" }, (payload) => {
+        const r = payload.new;
+        setReviews(prev => prev.map(review =>
+          review.id === r.id
+            ? { id: r.id, storeId: r.store_id, userId: r.user_id, userName: r.user_name, userType: r.user_type, preExpect: r.pre_expect, result: r.result, comment: r.comment, date: r.date }
+            : review
+        ));
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "reviews" }, (payload) => {
+        const r = payload.new;
+        setReviews(prev => {
+          // 既に楽観的更新で追加済みの場合は重複しない
+          if (prev.some(review => review.id === r.id)) return prev;
+          return [{ id: r.id, storeId: r.store_id, userId: r.user_id, userName: r.user_name, userType: r.user_type, preExpect: r.pre_expect, result: r.result, comment: r.comment, date: r.date }, ...prev];
+        });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "reviews" }, (payload) => {
+        setReviews(prev => prev.filter(review => review.id !== payload.old.id));
+      })
+      .subscribe();
+
     return () => {
       subscription.unsubscribe();
       supabase.removeChannel(storesChannel);
+      supabase.removeChannel(reviewsChannel);
     };
   }, []);
 
