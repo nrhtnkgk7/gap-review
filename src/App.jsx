@@ -1248,7 +1248,7 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
         <div style={{ textAlign: "center", padding: "80px 0", color: "#9a9088" }}>
           <p style={{ fontSize: 36, marginBottom: 14 }}>🔍</p>
           <p style={{ fontSize: 14, letterSpacing: "0.06em" }}>該当する店舗が見つかりません</p>
-          <button onClick={() => navigate("request-store")} style={{ marginTop: 18, background: "none", border: "1px solid #c9a96e44", color: "#c9a96e", padding: "10px 22px", fontSize: 12, letterSpacing: "0.1em", borderRadius: 2 }}>店舗を申請する</button>
+          <button onClick={() => navigate("add-store")} style={{ marginTop: 18, background: "none", border: "1px solid #c9a96e44", color: "#c9a96e", padding: "10px 22px", fontSize: 12, letterSpacing: "0.1em", borderRadius: 2 }}>店舗を追加する</button>
         </div>
       )}
     </div>
