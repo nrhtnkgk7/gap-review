@@ -1372,7 +1372,7 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
               color: isWished ? "#e67e22" : "#7a7268",
               padding: "12px 20px", fontSize: 13, borderRadius: 2, display: "flex", alignItems: "center", gap: 6,
             }}>
-              {isWished ? "🍽️ 行ってみたいリスト登録済み" : "🤍 行ってみたい"}
+              {isWished ? "🍽️ 行ってみたいリスト登録済み" : "♡ 行ってみたい"}
             </button>
           );
         })()}
@@ -1991,7 +1991,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
                   <p style={{ fontSize: 36, marginBottom: 14 }}>🍽️</p>
                   <p style={{ fontSize: 14, color: "#9a9088", marginBottom: 8 }}>気になるお店を保存しましょう</p>
                   <p style={{ fontSize: 12, color: "#c4b9ac", lineHeight: 1.9, marginBottom: 20 }}>
-                    店舗カードや店舗ページの 🤍 ボタンで<br />行ってみたいお店を保存できます
+                    店舗カードや店舗ページの ♡ ボタンで<br />行ってみたいお店を保存できます
                   </p>
                   <button onClick={() => navigate("search")} style={{ background: "none", border: "1px solid #e67e2244", color: "#e67e22", padding: "10px 22px", fontSize: 12, borderRadius: 2 }}>店舗を探す →</button>
                 </div>
@@ -2492,7 +2492,26 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
           <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.04em", marginBottom: 3 }}>{store.name}</p>
           <p style={{ fontSize: 11, color: "#7a7268" }}>{store.area} / {store.category}</p>
         </div>
-        <span style={{ fontSize: 11, color: "#c9a96e" }}>{store.priceRange}</span>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+          <span style={{ fontSize: 11, color: "#c9a96e" }}>{store.priceRange}</span>
+          {currentUser && (
+            <button
+              onClick={toggleWishlist}
+              title={isWished ? "行ってみたいリストから削除" : "行ってみたいリストに追加"}
+              style={{
+                background: isWished ? "#e67e2222" : "#faf8f5",
+                border: `1px solid ${isWished ? "#e67e22" : "#c9a96e44"}`,
+                borderRadius: "50%", width: 28, height: 28,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: isWished ? 14 : 16,
+                color: isWished ? "#e67e22" : "#c9a96e",
+                lineHeight: 1, transition: "all 0.2s", flexShrink: 0,
+              }}
+            >
+              {isWished ? "🍽️" : "♡"}
+            </button>
+          )}
+        </div>
       </div>
       <p style={{ fontSize: 12, color: "#7a7268", lineHeight: 1.7, marginBottom: 12 }}>{store.description}</p>
       <div style={{ marginBottom: 10 }}>
@@ -2523,23 +2542,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
         </div>
       ) : <p style={{ fontSize: 11, color: "#c4b9ac" }}>まだレビューなし</p>}
       </button>
-      {/* 行ってみたいボタン */}
-      {currentUser && (
-        <button
-          onClick={toggleWishlist}
-          title={isWished ? "行ってみたいリストから削除" : "行ってみたいリストに追加"}
-          style={{
-            position: "absolute", top: 12, right: 12,
-            background: isWished ? "#e67e2222" : "#faf8f5",
-            border: `1px solid ${isWished ? "#e67e22" : "#c9a96e44"}`,
-            borderRadius: "50%", width: 32, height: 32,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 15, transition: "all 0.2s", zIndex: 2,
-          }}
-        >
-          {isWished ? "🍽️" : "🤍"}
-        </button>
-      )}
+
     </div>
   );
 }
