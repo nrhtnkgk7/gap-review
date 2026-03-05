@@ -757,7 +757,31 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) setCurrentUser(null);
     });
-    return () => subscription.unsubscribe();
+
+    // stores のリアルタイム同期（admin が変更した内容を全クライアントに即時反映）
+    const storesChannel = supabase
+      .channel("stores-realtime")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "stores" }, (payload) => {
+        const s = payload.new;
+        setStores(prev => prev.map(store =>
+          store.id === s.id
+            ? { id: s.id, name: s.name, category: s.category, area: s.area, priceRange: s.price_range, description: s.description, image: s.image }
+            : store
+        ));
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "stores" }, (payload) => {
+        const s = payload.new;
+        setStores(prev => [...prev, { id: s.id, name: s.name, category: s.category, area: s.area, priceRange: s.price_range, description: s.description, image: s.image }]);
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "stores" }, (payload) => {
+        setStores(prev => prev.filter(store => store.id !== payload.old.id));
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(storesChannel);
+    };
   }, []);
 
   const navigate = (p, param = null) => {
