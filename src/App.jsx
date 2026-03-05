@@ -899,11 +899,11 @@ function NavBar({ navigate, currentUser, setCurrentUser, notify }) {
     <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(250,248,245,0.97)", backdropFilter: "blur(12px)", borderBottom: "1px solid #c9a96e44", height: 64, display: "flex", alignItems: "center", padding: "0 16px", gap: 14 }}>
       <button onClick={() => navigate("home")} style={{ background: "none", border: "none", color: "#2c2420", fontSize: 16, fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>Gap Review</button>
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
-        <button onClick={() => navigate("search")} style={{ background: "none", border: "none", color: "#8a8278", fontSize: 13 }}>店舗一覧</button>
+        <button onClick={() => navigate("search")} style={{ background: "none", border: "none", color: "#8a8278", fontSize: 13, lineHeight: 1.3, textAlign: "center" }}>店舗<br />一覧</button>
         {currentUser ? (
           <>
-            <button onClick={() => navigate("add-store")} style={{ background: "none", border: "none", color: "#8a8278", fontSize: 13 }}>店舗追加</button>
-            <button onClick={() => navigate("users")} style={{ background: "none", border: "none", color: "#8a8278", fontSize: 13 }}>ユーザー一覧</button>
+            <button onClick={() => navigate("add-store")} style={{ background: "none", border: "none", color: "#8a8278", fontSize: 13, lineHeight: 1.3, textAlign: "center" }}>店舗<br />追加</button>
+            <button onClick={() => navigate("users")} style={{ background: "none", border: "none", color: "#8a8278", fontSize: 13 }}>ユーザー</button>
             <button onClick={() => navigate("profile")} style={{ background: "none", border: "none", color: "#8a8278", fontSize: 13, maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser.name}</button>
             {currentUser.isAdmin && <button onClick={() => navigate("admin")} style={{ background: "none", border: "1px solid #c9a96e", color: "#c9a96e", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>管理</button>}
             <button onClick={logout} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>ログアウト</button>
