@@ -1756,9 +1756,26 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
     if (!editName.trim()) { notify("ユーザーネームを入力してください", "error"); return; }
     if (!editAxis1 || !editAxis2) { notify("タイプを選択してください", "error"); return; }
     const newType = editAxis1 + editAxis2;
-    const { error } = await supabase.from("profiles").update({ name: editName.trim(), user_type: newType }).eq("id", currentUser.id);
+    const newName = editName.trim();
+
+    // profiles 更新
+    const { error } = await supabase.from("profiles").update({ name: newName, user_type: newType }).eq("id", currentUser.id);
     if (error) { notify("更新に失敗しました", "error"); return; }
-    setCurrentUser(prev => ({ ...prev, name: editName.trim(), userType: newType, user_type: newType }));
+
+    // 名前が変わった場合は過去のレビューも一括更新
+    if (newName !== currentUser.name) {
+      const { error: reviewError } = await supabase
+        .from("reviews")
+        .update({ user_name: newName })
+        .eq("user_id", currentUser.id);
+      if (reviewError) { notify("レビューの名前更新に失敗しました", "error"); return; }
+      // ローカルのreviewsも更新
+      setReviews(prev => prev.map(r =>
+        r.userId === currentUser.id ? { ...r, userName: newName } : r
+      ));
+    }
+
+    setCurrentUser(prev => ({ ...prev, name: newName, userType: newType, user_type: newType }));
     setIsEditing(false);
     notify("プロフィールを更新しました");
   };
