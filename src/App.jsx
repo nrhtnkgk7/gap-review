@@ -759,19 +759,29 @@ export default function App() {
     });
 
     // stores のリアルタイム同期（admin が変更した内容を全クライアントに即時反映）
+    // ※ RLS有効時はpayload.newが空になるため、イベント受信後にDBから再取得する方式を採用
     const storesChannel = supabase
       .channel("stores-realtime")
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "stores" }, (payload) => {
-        const s = payload.new;
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "stores" }, async (payload) => {
+        const id = payload.new?.id || payload.old?.id;
+        if (!id) return;
+        const { data } = await supabase.from("stores").select("*").eq("id", id).single();
+        if (!data) return;
         setStores(prev => prev.map(store =>
-          store.id === s.id
-            ? { id: s.id, name: s.name, category: s.category, area: s.area, priceRange: s.price_range, description: s.description, image: s.image }
+          store.id === data.id
+            ? { id: data.id, name: data.name, category: data.category, area: data.area, priceRange: data.price_range, description: data.description, image: data.image }
             : store
         ));
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "stores" }, (payload) => {
-        const s = payload.new;
-        setStores(prev => [...prev, { id: s.id, name: s.name, category: s.category, area: s.area, priceRange: s.price_range, description: s.description, image: s.image }]);
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "stores" }, async (payload) => {
+        const id = payload.new?.id;
+        if (!id) return;
+        const { data } = await supabase.from("stores").select("*").eq("id", id).single();
+        if (!data) return;
+        setStores(prev => {
+          if (prev.some(s => s.id === data.id)) return prev;
+          return [...prev, { id: data.id, name: data.name, category: data.category, area: data.area, priceRange: data.price_range, description: data.description, image: data.image }];
+        });
       })
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "stores" }, (payload) => {
         setStores(prev => prev.filter(store => store.id !== payload.old.id));
@@ -781,11 +791,14 @@ export default function App() {
     // reviews のリアルタイム同期（ユーザー名変更・新規投稿・削除を全クライアントに反映）
     const reviewsChannel = supabase
       .channel("reviews-realtime")
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "reviews" }, (payload) => {
-        const r = payload.new;
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "reviews" }, async (payload) => {
+        const id = payload.new?.id || payload.old?.id;
+        if (!id) return;
+        const { data } = await supabase.from("reviews").select("*").eq("id", id).single();
+        if (!data) return;
         setReviews(prev => prev.map(review =>
-          review.id === r.id
-            ? { id: r.id, storeId: r.store_id, userId: r.user_id, userName: r.user_name, userType: r.user_type, preExpect: r.pre_expect, result: r.result, comment: r.comment, date: r.date }
+          review.id === data.id
+            ? { id: data.id, storeId: data.store_id, userId: data.user_id, userName: data.user_name, userType: data.user_type, preExpect: data.pre_expect, result: data.result, comment: data.comment, date: data.date }
             : review
         ));
       })
