@@ -788,7 +788,9 @@ export default function App() {
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "stores" }, (payload) => {
         setStores(prev => prev.filter(store => store.id !== payload.old.id));
       })
-      .subscribe();
+      .subscribe((status, err) => {
+        console.log("[stores realtime] status:", status, err || "");
+      });
 
     // reviews のリアルタイム同期（ユーザー名変更・新規投稿・削除を全クライアントに反映）
     const reviewsChannel = supabase
@@ -815,7 +817,9 @@ export default function App() {
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "reviews" }, (payload) => {
         setReviews(prev => prev.filter(review => review.id !== payload.old.id));
       })
-      .subscribe();
+      .subscribe((status, err) => {
+        console.log("[reviews realtime] status:", status, err || "");
+      });
 
     return () => {
       subscription.unsubscribe();
