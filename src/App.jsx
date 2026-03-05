@@ -764,8 +764,10 @@ export default function App() {
       .channel("stores-realtime")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "stores" }, async (payload) => {
         const id = payload.new?.id || payload.old?.id;
-        if (!id) return;
-        const { data } = await supabase.from("stores").select("*").eq("id", id).single();
+        console.log("[stores realtime] UPDATE fired", { payloadNew: payload.new, payloadOld: payload.old, resolvedId: id });
+        if (!id) { console.warn("[stores realtime] id not found in payload"); return; }
+        const { data, error } = await supabase.from("stores").select("*").eq("id", id).single();
+        console.log("[stores realtime] re-fetch result", { data, error });
         if (!data) return;
         setStores(prev => prev.map(store =>
           store.id === data.id
