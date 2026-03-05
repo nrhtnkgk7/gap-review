@@ -781,7 +781,7 @@ export default function App() {
   const props = { navigate, stores, setStores, reviews, setReviews, currentUser, setCurrentUser, users, setUsers, pageParam, searchQ, setSearchQ, notify, follows, setFollows, wishlists, setWishlists };
 
   if (loading) return (
-    <div style={{ fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif", background: "#faf8f5", minHeight: "100vh", color: "#2c2420", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ fontFamily: "'IBM Plex Sans JP','Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif", background: "#faf8f5", minHeight: "100vh", color: "#2c2420", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ textAlign: "center" }}>
         <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontStyle: "italic", color: "#c9a96e", marginBottom: 16 }}>Gap Review</p>
         <p style={{ fontSize: 12, color: "#c4b9ac", letterSpacing: "0.2em" }}>LOADING...</p>
@@ -790,9 +790,9 @@ export default function App() {
   );
 
   return (
-    <div style={{ fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif", background: "#faf8f5", minHeight: "100vh", color: "#2c2420" }}>
+    <div style={{ fontFamily: "'IBM Plex Sans JP','Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif", background: "#faf8f5", minHeight: "100vh", color: "#2c2420" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
         html,body{background:#faf8f5!important;margin:0;padding:0}
         *{box-sizing:border-box;margin:0;padding:0}
         input,textarea,select{font-size:16px!important;font-family:inherit;-webkit-text-size-adjust:none;touch-action:manipulation}
