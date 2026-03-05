@@ -764,10 +764,8 @@ export default function App() {
       .channel("stores-realtime")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "stores" }, async (payload) => {
         const id = payload.new?.id || payload.old?.id;
-        console.log("[stores realtime] UPDATE fired", { payloadNew: payload.new, payloadOld: payload.old, resolvedId: id });
-        if (!id) { console.warn("[stores realtime] id not found in payload"); return; }
-        const { data, error } = await supabase.from("stores").select("*").eq("id", id).single();
-        console.log("[stores realtime] re-fetch result", { data, error });
+        if (!id) return;
+        const { data } = await supabase.from("stores").select("*").eq("id", id).single();
         if (!data) return;
         setStores(prev => prev.map(store =>
           store.id === data.id
@@ -788,9 +786,7 @@ export default function App() {
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "stores" }, (payload) => {
         setStores(prev => prev.filter(store => store.id !== payload.old.id));
       })
-      .subscribe((status, err) => {
-        console.log("[stores realtime] status:", status, err || "");
-      });
+      .subscribe();
 
     // reviews のリアルタイム同期（ユーザー名変更・新規投稿・削除を全クライアントに反映）
     const reviewsChannel = supabase
@@ -817,9 +813,7 @@ export default function App() {
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "reviews" }, (payload) => {
         setReviews(prev => prev.filter(review => review.id !== payload.old.id));
       })
-      .subscribe((status, err) => {
-        console.log("[reviews realtime] status:", status, err || "");
-      });
+      .subscribe();
 
     return () => {
       subscription.unsubscribe();
