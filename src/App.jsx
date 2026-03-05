@@ -2489,7 +2489,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
         <span style={{ fontSize: 30 }}>{store.image}</span>
         <div style={{ flex: 1 }}>
-          <p style={{ fontSize: 14, letterSpacing: "0.04em", marginBottom: 3 }}>{store.name}</p>
+          <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.04em", marginBottom: 3 }}>{store.name}</p>
           <p style={{ fontSize: 11, color: "#7a7268" }}>{store.area} / {store.category}</p>
         </div>
         <span style={{ fontSize: 11, color: "#c9a96e" }}>{store.priceRange}</span>
@@ -2551,6 +2551,14 @@ function ReviewCard({ review, storeName, showStore, currentUserType, navigate, m
   const isSameType = currentUserType && review.userType === currentUserType;
   return (
     <div style={{ background: "#ffffff", border: `1px solid ${isSameType ? ut?.color + "44" : "#c9a96e44"}`, padding: "16px 20px" }}>
+      {showStore && storeName && (
+        <button
+          onClick={() => navigate && navigate("store", review.storeId)}
+          style={{ background: "none", border: "none", padding: 0, display: "block", textAlign: "left", width: "100%", marginBottom: 10 }}
+        >
+          <p style={{ fontSize: 15, fontWeight: 700, color: "#2c2420", letterSpacing: "0.03em" }}>{storeName}</p>
+        </button>
+      )}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -2560,7 +2568,6 @@ function ReviewCard({ review, storeName, showStore, currentUserType, navigate, m
             >{review.userName}</button>
             {ut && <span style={{ fontSize: 10, color: ut.color, background: ut.color + "15", padding: "2px 8px", borderRadius: 20 }}>{ut.icon} {ut.label}</span>}
             {isSameType && <span style={{ fontSize: 10, color: "#c9a96e" }}>あなたと同タイプ</span>}
-            {showStore && storeName && <span style={{ fontSize: 11, color: "#7a7268" }}>→ {storeName}</span>}
           </div>
           <p style={{ fontSize: 11, color: "#c4b9ac", marginTop: 3 }}>{review.date}</p>
         </div>
