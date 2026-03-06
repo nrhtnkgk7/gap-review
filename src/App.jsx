@@ -935,17 +935,20 @@ function NavBar({ navigate, currentUser, setCurrentUser, notify }) {
   const logout = async () => { await supabase.auth.signOut(); setCurrentUser(null); notify("ログアウトしました"); navigate("home"); };
 
   return (
-    <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(250,248,245,0.97)", backdropFilter: "blur(12px)", borderBottom: "1px solid #c9a96e44", height: 64, display: "flex", alignItems: "center", padding: "0 16px", gap: 14 }}>
+    <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(250,248,245,0.97)", backdropFilter: "blur(12px)", borderBottom: "1px solid #c9a96e44", height: 64, display: "flex", alignItems: "center", padding: "0 16px", gap: 14 }} className={currentUser ? "nav-hide-mobile" : ""}>
       <style>{`
         .nav-label-mobile { display: none; }
         .nav-label-pc { display: inline; }
         @media (max-width: 640px) {
           .nav-label-mobile { display: inline; }
           .nav-label-pc { display: none; }
+          .nav-logged-in { display: none !important; }
+          .nav-hide-mobile { display: none !important; }
+          .has-tab-bar { padding-top: 12px !important; }
         }
       `}</style>
-      <button onClick={() => navigate("home")} style={{ background: "none", border: "none", color: "#2c2420", fontSize: 16, fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>Gap Review</button>
-      <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
+      <button onClick={() => navigate("home")} style={{ background: "none", border: "none", color: "#2c2420", fontSize: 16, fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", letterSpacing: "0.08em", whiteSpace: "nowrap" }} className={currentUser ? "nav-hide-mobile" : ""}>Gap Review</button>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }} className={currentUser ? "nav-logged-in" : ""}>
         <button onClick={() => navigate("search")} style={{ background: "none", border: "none", color: "#8a8278", fontSize: 13, lineHeight: 1.3, textAlign: "center" }}>
           <span className="nav-label-pc">店舗一覧</span>
           <span className="nav-label-mobile">店舗<br />一覧</span>
@@ -2018,6 +2021,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
                 <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "0.02em" }}>{currentUser.name}</h1>
                 <button onClick={() => setIsEditing(true)} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>✏️ 編集</button>
                 <button onClick={handleShare} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>🔗 シェア</button>
+                <button onClick={async () => { await supabase.auth.signOut(); setCurrentUser(null); notify("ログアウトしました"); navigate("home"); }} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>ログアウト</button>
               </div>
               <p style={{ fontSize: 12, color: ut?.color, letterSpacing: "0.1em", marginBottom: 3 }}>{ut?.label}</p>
               <p style={{ fontSize: 12, color: "#7a7268" }}>{ut?.desc}</p>
