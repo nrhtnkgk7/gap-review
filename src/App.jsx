@@ -1177,7 +1177,7 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users, wish
           あなたの舌に<br /><em style={{ fontStyle: "italic", color: "#c9a96e" }}>ピッタリ</em>のお店が<br />見つかる
         </h1>
         <p style={{ fontSize: 14, color: "#7a7268", maxWidth: 420, lineHeight: 1.9, letterSpacing: "0.06em", marginBottom: 48 }}>
-          点数評価に依存しない新しいレビューシステム。<br />あなたの「期待」と「体験」のギャップが、真の評価軸になる。
+          点数評価に依存しない新しいレビューシステム。<br />あなたの「期待」と「体験」のギャップが、<br />真の評価軸になる。
         </p>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
           <button onClick={() => navigate("search")} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "14px 32px", fontSize: 13, letterSpacing: "0.15em", fontWeight: 600 }}>店舗を探す</button>
