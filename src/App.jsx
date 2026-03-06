@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Home, Store, PlusSquare, Users, User } from "https://esm.sh/lucide-react@0.263.1";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = "https://hhnhzvxfqwhfhcewbpye.supabase.co";
@@ -862,9 +863,18 @@ export default function App() {
         button:active{filter:brightness(0.75);transform:scale(0.97)}
         ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0c0c0e}::-webkit-scrollbar-thumb{background:#3a3028;border-radius:2px}
         @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes shineLR{0%{transform:translateX(-200%) skewX(20deg)}100%{transform:translateX(300%) skewX(20deg)}}
+        .shine-btn{position:relative;overflow:hidden}
+        .shine-btn::after{content:'';position:absolute;top:-50%;left:0;width:55%;height:200%;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.35) 50%,transparent 100%);animation:shineLR 6s linear infinite;pointer-events:none}
         @keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
         .fade-in{animation:fadeIn 0.45s ease forwards}
         .hover-lift{transition:transform 0.2s,box-shadow 0.2s}.hover-lift:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,0.10)}
+        .card-morph-c{transition:all 0.4s ease}
+        .card-morph-c:hover{background:linear-gradient(135deg,#fffdf5 0%,#fdf5e0 100%)!important;border-color:#c9a96e88!important;transform:translateY(-2px);box-shadow:0 6px 24px rgba(201,169,110,0.15)!important}
+        .card-morph-e{transition:all 0.3s ease;border-bottom:2px solid transparent!important}
+        .card-morph-e:hover{border-bottom:2px solid #c9a96e!important;transform:translateY(-3px);box-shadow:0 8px 32px rgba(201,169,110,0.18)!important}
+        .bottom-tab-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(250,248,245,0.97);backdrop-filter:blur(12px);border-top:1px solid #c9a96e33;padding:8px 0 max(12px,env(safe-area-inset-bottom));box-shadow:0 -2px 12px rgba(44,36,32,0.06)}
+        @media(max-width:640px){.bottom-tab-bar{display:grid;grid-template-columns:repeat(5,1fr)}.has-tab-bar{padding-bottom:80px}}
       `}</style>
 
       {notification && (
@@ -874,7 +884,8 @@ export default function App() {
       )}
 
       <NavBar {...props} />
-      <div style={{ paddingTop: 64 }}>
+      {currentUser && <BottomTabBar navigate={navigate} page={page} />}
+      <div style={{ paddingTop: 64 }} className={currentUser ? "has-tab-bar" : ""}>
         {page === "home" && <HomePage {...props} />}
         {page === "search" && <SearchPage {...props} />}
         {page === "store" && <StorePage {...props} />}
@@ -889,6 +900,34 @@ export default function App() {
         {page === "user-profile" && <UserProfilePage {...props} />}
       </div>
     </div>
+  );
+}
+
+function BottomTabBar({ navigate, page }) {
+  const accent = "#c9a96e";
+  const tabs = [
+    { id: "home",      Icon: Home,       label: "ホーム" },
+    { id: "search",    Icon: Store,      label: "店舗" },
+    { id: "add-store", Icon: PlusSquare, label: "登録" },
+    { id: "users",     Icon: Users,      label: "ユーザー" },
+    { id: "profile",   Icon: User,       label: "マイページ" },
+  ];
+  return (
+    <nav className="bottom-tab-bar">
+      {tabs.map(({ id, Icon, label }) => {
+        const isActive = page === id;
+        return (
+          <button
+            key={id}
+            onClick={() => navigate(id)}
+            style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, padding: "4px 0" }}
+          >
+            <Icon size={22} strokeWidth={isActive ? 2.2 : 1.6} color={isActive ? accent : "#9a9088"} />
+            <span style={{ fontSize: 9, fontWeight: isActive ? 700 : 400, color: isActive ? accent : "#9a9088", letterSpacing: "0.04em" }}>{label}</span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -1024,7 +1063,7 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users, wish
       <div className="fade-in" style={{ maxWidth: 700, margin: "0 auto", padding: "40px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
           <SectionLabel>For You</SectionLabel>
-          <button onClick={() => navigate("review-form")} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "10px 22px", fontSize: 12, letterSpacing: "0.12em", fontWeight: 600, borderRadius: 2 }}>レビューを書く +</button>
+          <button onClick={() => navigate("review-form")} className="shine-btn" style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "10px 22px", fontSize: 12, letterSpacing: "0.12em", fontWeight: 600, borderRadius: 2 }}>レビューを書く +</button>
         </div>
 
         {/* フィルタータブ */}
@@ -1432,7 +1471,7 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
       )}
 
       <div style={{ marginBottom: 32, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <button onClick={() => navigate(currentUser ? "review-form" : "login", pageParam)} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "12px 28px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>レビューを書く</button>
+        <button onClick={() => navigate(currentUser ? "review-form" : "login", pageParam)} className="shine-btn" style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "12px 28px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>レビューを書く</button>
         {currentUser && (() => {
           const isWished = (wishlists?.[currentUser.id] || []).includes(store.id);
           const toggleWishlist = async () => {
@@ -2044,7 +2083,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
               myReviews.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "44px 0" }}>
                   <p style={{ fontSize: 14, color: "#9a9088", marginBottom: 18 }}>まだ感想が投稿されていません</p>
-                  <button onClick={() => navigate("review-form")} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "12px 26px", fontSize: 13, fontWeight: 600 }}>最初のレビューを書く</button>
+                  <button onClick={() => navigate("review-form")} className="shine-btn" style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "12px 26px", fontSize: 13, fontWeight: 600 }}>最初のレビューを書く</button>
                 </div>
               ) : (
                 <>
@@ -2581,7 +2620,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
 
   return (
     <div style={{ position: "relative" }}>
-      <button onClick={() => navigate("store", store.id)} className="hover-lift" style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 3, width: "100%" }}>
+      <button onClick={() => navigate("store", store.id)} className="card-morph-e" style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 8, width: "100%" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
         <span style={{ fontSize: 30 }}>{store.image}</span>
         <div style={{ flex: 1 }}>
@@ -2649,7 +2688,7 @@ function ReviewCard({ review, storeName, showStore, currentUserType, navigate, m
   const ut = USER_TYPES[review.userType];
   const isSameType = currentUserType && review.userType === currentUserType;
   return (
-    <div style={{ background: "#ffffff", border: `1px solid ${isSameType ? ut?.color + "44" : "#c9a96e44"}`, padding: "16px 20px" }}>
+    <div className="card-morph-c" style={{ background: "#ffffff", border: `1px solid ${isSameType ? ut?.color + "44" : "#c9a96e44"}`, borderRadius: 8, padding: "16px 20px" }}>
       {showStore && storeName && (
         <button
           onClick={() => navigate && navigate("store", review.storeId)}
