@@ -903,6 +903,69 @@ export default function App() {
   );
 }
 
+function ReviewProgressBar({ count }) {
+  const accent = "#c9a96e";
+  const max = 20;
+  const pct = Math.min(count / max * 100, 100);
+  const done = count >= max;
+  const remaining = Math.max(max - count, 0);
+
+  const stages = [
+    { min: 0,  max: 1,  icon: "🍽️", label: "最初の一歩を踏み出そう",            sub: "あと20件でジャンル別分析が解放されます" },
+    { min: 1,  max: 3,  icon: "🍽️", label: "記録がはじまりました",               sub: "続けてみましょう。味の好みが少しずつ見えてきます" },
+    { min: 3,  max: 5,  icon: "📝", label: "いい調子です",                       sub: "あと少し。あなたの「好み」の輪郭が出てきます" },
+    { min: 5,  max: 7,  icon: "📊", label: "傾向が見えはじめました",              sub: "食の好みに一貫性が出てきています" },
+    { min: 7,  max: 10, icon: "📊", label: "あなたらしさが出てきた",              sub: "10件まであと少し。ここからが本番です" },
+    { min: 10, max: 13, icon: "🔍", label: "好みの核心に近づいています",          sub: "データが蓄積されるほど、レコメンドの精度が上がります" },
+    { min: 13, max: 16, icon: "🔍", label: "あなたの「食の個性」が見えてきた",    sub: "もう少しでジャンル別の相性分析が使えます" },
+    { min: 16, max: 18, icon: "⭐", label: "ゴールまであと少し！",                sub: "あと数件です。続けてください" },
+    { min: 18, max: 20, icon: "⭐", label: "もう目前です",                        sub: "あと2件でジャンル別分析＆レポートが解放されます" },
+    { min: 20, max: 25, icon: "✨", label: "ジャンル別の相性分析が使えます",      sub: "さらに投稿するほど、分析の精度が増します" },
+    { min: 25, max: 30, icon: "✨", label: "あなたの食の地図が広がっています",    sub: "30件でより詳細なGAP傾向レポートが精度アップします" },
+    { min: 30, max: 35, icon: "🎖️", label: "GAP傾向レポートの精度が上がりました", sub: "分析がさらに深まっています" },
+    { min: 35, max: 40, icon: "🎖️", label: "食の審美眼が研ぎ澄まされています",   sub: "40件達成まであと少しです" },
+    { min: 40, max: 45, icon: "🏅", label: "かなりの記録数です",                  sub: "45件でさらに精度の高い推薦ができます" },
+    { min: 45, max: 50, icon: "🏅", label: "上級グルメへの道",                    sub: "50件で上級グルメ認定まであと少し" },
+    { min: 50, max: Infinity, icon: "🏆", label: "上級グルメ認定",                sub: "あなたのデータは多くの人のレコメンドにも貢献しています" },
+  ];
+
+  const milestones = [
+    { at: 5,  icon: "📊", label: "傾向が見えはじめる" },
+    { at: 10, icon: "🔍", label: "好みの核心に近づく" },
+    { at: 20, icon: "✨", label: "ジャンル別相性分析＆レポート解放" },
+    { at: 30, icon: "🎖️", label: "GAP傾向レポート精度アップ" },
+    { at: 50, icon: "🏆", label: "上級グルメ認定" },
+  ];
+
+  const stage = stages.find(s => count >= s.min && count < s.max) || stages[stages.length - 1];
+
+  return (
+    <div style={{ background: "#fff", border: "1px solid #c9a96e33", borderRadius: 8, padding: "14px 16px", marginBottom: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 15 }}>{stage.icon}</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: accent, letterSpacing: "0.04em" }}>{stage.label}</span>
+        </div>
+        <span style={{ fontSize: 11, color: "#9a9088" }}>{count} / {max}件</span>
+      </div>
+      <div style={{ background: "#f0ece4", borderRadius: 99, height: 6, overflow: "hidden", marginBottom: 6 }}>
+        <div style={{ height: "100%", borderRadius: 99, background: done ? "linear-gradient(90deg,#c9a96e,#e8c97a)" : "linear-gradient(90deg,#c9a96e,#dfc080)", width: `${pct}%`, transition: "width 0.6s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: done ? "0 0 8px #c9a96e66" : "none" }} />
+      </div>
+      <p style={{ fontSize: 11, color: done ? accent : "#9a9088" }}>
+        {done ? "🎉 ジャンル別の相性分析とレポートが使えるようになりました" : <>{stage.sub}（あと<span style={{ color: accent, fontWeight: 700 }}>{remaining}件</span>）</>}
+      </p>
+      <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+        {milestones.map(m => (
+          <div key={m.at} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, color: count >= m.at ? accent : "#c4b9ac", transition: "color 0.3s" }}>
+            <span>{m.icon}</span><span style={{ fontWeight: count >= m.at ? 700 : 400 }}>{m.at}件</span>
+            {m.at !== 50 && <span style={{ color: "#e0d8cc", marginLeft: 3 }}>›</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BottomTabBar({ navigate, page }) {
   const accent = "#c9a96e";
   const tabs = [
@@ -1068,6 +1131,9 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users, wish
           <SectionLabel>For You</SectionLabel>
           <button onClick={() => navigate("review-form")} className="shine-btn" style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "10px 22px", fontSize: 12, letterSpacing: "0.12em", fontWeight: 600, borderRadius: 2 }}>レビューを書く +</button>
         </div>
+
+        {/* 投稿進捗バー（20件達成まで表示） */}
+        {myReviews.length < 20 && <ReviewProgressBar count={myReviews.length} />}
 
         {/* フィルタータブ */}
         <div style={{ display: "flex", gap: 2, marginBottom: 24, flexWrap: "wrap" }}>
@@ -2040,6 +2106,8 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
           <span style={{ fontSize: 11, color: "#7a7268", marginLeft: 5 }}>フォロワー</span>
         </button>
       </div>
+
+      <ReviewProgressBar count={myReviews.length} />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, marginBottom: 24 }}>
         {[{ label: "投稿数", key: "all", value: reviewCounts.all }, { label: "よかった！", key: "beyond", value: reviewCounts.beyond }, { label: "残念だった", key: "below", value: reviewCounts.below }].map(({ label, key, value }) => (
