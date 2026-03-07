@@ -880,7 +880,7 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
         html,body{background:#faf8f5!important;margin:0;padding:0}
-        *{box-sizing:border-box;margin:0;padding:0}
+        *{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation}
         input,textarea,select{font-size:16px!important;font-family:inherit;-webkit-text-size-adjust:none;touch-action:manipulation}
         button{cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;transition:filter 0.15s ease,transform 0.1s ease}
         button:active{filter:brightness(0.75);transform:scale(0.97)}
@@ -2838,7 +2838,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
 
   return (
     <div style={{ position: "relative" }}>
-      <div onClick={() => navigate("store", store.id)} onTouchEnd={(e) => { e.preventDefault(); navigate("store", store.id); }} className="card-morph-e" style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 8, width: "100%", cursor: "pointer" }}>
+      <div onClick={() => navigate("store", store.id)} className="card-morph-e" style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 8, width: "100%", cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
         <span style={{ fontSize: 30 }}>{store.image}</span>
         <div style={{ flex: 1 }}>
@@ -2865,7 +2865,6 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
               }}
               className={isWished ? "heart-bounce" : ""}
               key={isWished ? "wished" : "unwished"}
-              onTouchEnd={toggleWishlist}
             >
               {isWished ? "🍽️" : "♡"}
             </button>
