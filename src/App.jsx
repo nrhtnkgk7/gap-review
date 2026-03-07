@@ -583,19 +583,73 @@ function calcMatchScore(storeId, user, reviews, stores) {
 
 // ── ジャンル別マッチサマリー（プロフィール画面用） ───────────────────────────
 //   そのユーザーがジャンルごとにどの程度「合いやすい」かを集計
-function calcGenreAffinityMap(user, reviews, stores) {
-  const genreMap = {};
-  stores.forEach(store => {
-    const result = calcMatchScore(store.id, user, reviews, stores);
-    if (!result) return;
-    if (!genreMap[store.category]) genreMap[store.category] = { scores: [], genre: store.category };
-    genreMap[store.category].scores.push(result.score);
-  });
-  return Object.values(genreMap).map(g => ({
-    genre: g.genre,
-    avgScore: Math.round(g.scores.reduce((a, b) => a + b, 0) / g.scores.length),
-    storeCount: g.scores.length,
-  })).sort((a, b) => b.avgScore - a.avgScore);
+// ── 期待パターン分析（20件報酬） ──────────────────────────────────────────────
+const EXPECTATION_TYPES = {
+  keen_eye:    { icon: "🎯", label: "直感の目利き",     color: "#1abc9c",
+    desc: "高い期待で行った店で高確率で満足。あなたの嗅覚は信頼できる",
+    advice: "直感を信じて、気になったら迷わず行きましょう" },
+  dreamer:     { icon: "💫", label: "情熱のドリーマー", color: "#9b59b6",
+    desc: "期待を高く持つロマンチスト。波はあるが最高の体験も引き寄せる",
+    advice: "期待が高い分ガッカリも多いが、それ以上の感動に出会える人です" },
+  steady:      { icon: "📐", label: "堅実グルメ",       color: "#f39c12",
+    desc: "バランス感覚に優れ、安定して良い体験を重ねている",
+    advice: "あなたの期待設定は正確です。安心して自分の感覚を信じて" },
+  drifter:     { icon: "🧭", label: "好奇心ドリフター", color: "#3498db",
+    desc: "フラットに構えて予想外の発見を楽しむ自然体タイプ",
+    advice: "予想外の出会いがあなたの食体験を豊かにしています" },
+  gem_hunter:  { icon: "💎", label: "発掘の達人",       color: "#e67e22",
+    desc: "控えめな期待で行って良い意味で裏切られることが多い名発掘者",
+    advice: "ふらっと入った店で最高の体験をするあなたの才能を活かして" },
+  realist:     { icon: "🔍", label: "慎重なリアリスト", color: "#7a7268",
+    desc: "堅実に店を選び、期待通りの体験を安定して積み重ねるタイプ",
+    advice: "たまには期待を上げて行ってみると新しい発見があるかも" },
+};
+
+function analyzeExpectationPattern(userReviews) {
+  if (userReviews.length < 20) return null;
+  const byLevel = { high: [], normal: [], low: [] };
+  userReviews.forEach(r => { if (byLevel[r.preExpect]) byLevel[r.preExpect].push(r); });
+
+  const hitRate = (revs) => revs.length === 0 ? null : Math.round(revs.filter(r => isHit(r)).length / revs.length * 100);
+  const goodRate = (revs) => revs.length === 0 ? null : Math.round(revs.filter(r => r.result === "Good").length / revs.length * 100);
+  const rates = { high: hitRate(byLevel.high), normal: hitRate(byLevel.normal), low: hitRate(byLevel.low) };
+
+  // ベストレベル（最もよかった率が高い期待レベル）
+  const validRates = Object.entries(rates).filter(([,v]) => v !== null);
+  const bestEntry = validRates.sort((a, b) => b[1] - a[1])[0];
+  const bestLevel = bestEntry ? bestEntry[0] : "normal";
+  const bestRate = bestEntry ? bestEntry[1] : 50;
+
+  // キャリブレーション（期待通りに着地した割合）
+  const expectedCount = userReviews.filter(r => r.result === "Expected").length;
+  const calibration = Math.round(expectedCount / userReviews.length * 100);
+  const isAccurate = calibration >= 35;
+
+  // タイプ判定
+  let typeKey;
+  if (bestLevel === "high" && isAccurate)  typeKey = "keen_eye";
+  if (bestLevel === "high" && !isAccurate) typeKey = "dreamer";
+  if (bestLevel === "normal" && isAccurate)  typeKey = "steady";
+  if (bestLevel === "normal" && !isAccurate) typeKey = "drifter";
+  if (bestLevel === "low" && !isAccurate)    typeKey = "gem_hunter";
+  if (bestLevel === "low" && isAccurate)     typeKey = "realist";
+  if (!typeKey) typeKey = "steady";
+
+  // ベスト・サプライズ（低い期待 + Good）
+  const surprises = userReviews.filter(r => r.preExpect === "low" && r.result === "Good");
+  const bestSurprise = surprises.length > 0 ? surprises[surprises.length - 1] : null;
+
+  // ビッゲスト・ギャップ（高い期待 + Below）
+  const disappointments = userReviews.filter(r => r.preExpect === "high" && r.result === "Below");
+  const biggestGap = disappointments.length > 0 ? disappointments[disappointments.length - 1] : null;
+
+  return {
+    typeKey, type: EXPECTATION_TYPES[typeKey],
+    rates, bestLevel, bestRate, calibration,
+    totalReviews: userReviews.length,
+    levelCounts: { high: byLevel.high.length, normal: byLevel.normal.length, low: byLevel.low.length },
+    bestSurprise, biggestGap,
+  };
 }
 
 // ── スコア → 表示ラベル・色の変換 ───────────────────────────────────────────
@@ -851,11 +905,16 @@ export default function App() {
   const navigate = (p, param = null) => {
     if (navLock.current) return;
     navLock.current = true;
+    // BottomTabBar のポインターイベントを一時無効化
+    const tabBar = document.querySelector('.bottom-tab-bar');
+    if (tabBar) tabBar.style.pointerEvents = 'none';
     window.history.pushState({ page: p, param }, "", `#${p}${param ? `/${param}` : ""}`);
     setPage(p); setPageParam(param);
-    // scrollToをRAFで遅延し、タッチイベントシーケンス完了後に実行
     requestAnimationFrame(() => window.scrollTo(0, 0));
-    setTimeout(() => { navLock.current = false; }, 400);
+    setTimeout(() => {
+      navLock.current = false;
+      if (tabBar) tabBar.style.pointerEvents = '';
+    }, 600);
   };
 
   // ブラウザの戻る/進むボタン対応
@@ -908,7 +967,7 @@ export default function App() {
         .hover-lift{transition:transform 0.2s,box-shadow 0.2s}.hover-lift:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,0.10)}
         .card-morph-c{transition:all 0.4s ease}
         .card-morph-c:hover{background:linear-gradient(135deg,#fffdf5 0%,#fdf5e0 100%)!important;border-color:#c9a96e88!important;transform:translateY(-2px);box-shadow:0 6px 24px rgba(201,169,110,0.15)!important}
-        .card-morph-e{transition:all 0.3s ease;border-bottom:2px solid transparent!important}
+        .card-morph-e{transition:transform 0.3s ease,box-shadow 0.3s ease,border-color 0.3s ease;border-bottom:2px solid transparent!important}
         .card-morph-e:hover{border-bottom:2px solid #c9a96e!important;transform:translateY(-3px);box-shadow:0 8px 32px rgba(201,169,110,0.18)!important}
         .bottom-tab-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(250,248,245,0.97);backdrop-filter:blur(12px);border-top:1px solid #c9a96e33;padding:8px 0 max(12px,env(safe-area-inset-bottom));box-shadow:0 -2px 12px rgba(44,36,32,0.06)}
         @media(max-width:640px){.bottom-tab-bar{display:grid;grid-template-columns:repeat(5,1fr)}.has-tab-bar{padding-bottom:80px}}
@@ -948,16 +1007,16 @@ function ReviewProgressBar({ count }) {
   const remaining = Math.max(max - count, 0);
 
   const stages = [
-    { min: 0,  max: 1,  icon: "🍽️", label: "最初の一歩を踏み出そう",            sub: "あと20件でジャンル別分析が解放されます" },
+    { min: 0,  max: 1,  icon: "🍽️", label: "最初の一歩を踏み出そう",            sub: "あと20件であなたの食体験インサイトが解放されます" },
     { min: 1,  max: 3,  icon: "🍽️", label: "記録がはじまりました",               sub: "続けてみましょう。味の好みが少しずつ見えてきます" },
     { min: 3,  max: 5,  icon: "📝", label: "いい調子です",                       sub: "あと少し。あなたの「好み」の輪郭が出てきます" },
     { min: 5,  max: 7,  icon: "📊", label: "傾向が見えはじめました",              sub: "食の好みに一貫性が出てきています" },
     { min: 7,  max: 10, icon: "📊", label: "あなたらしさが出てきた",              sub: "10件まであと少し。ここからが本番です" },
     { min: 10, max: 13, icon: "🔍", label: "好みの核心に近づいています",          sub: "データが蓄積されるほど、レコメンドの精度が上がります" },
-    { min: 13, max: 16, icon: "🔍", label: "あなたの「食の個性」が見えてきた",    sub: "もう少しでジャンル別の相性分析が使えます" },
+    { min: 13, max: 16, icon: "🔍", label: "あなたの「食の個性」が見えてきた",    sub: "もう少しであなたの期待パターン分析が解放されます" },
     { min: 16, max: 18, icon: "⭐", label: "ゴールまであと少し！",                sub: "あと数件です。続けてください" },
-    { min: 18, max: 20, icon: "⭐", label: "もう目前です",                        sub: "あと2件でジャンル別分析＆レポートが解放されます" },
-    { min: 20, max: 25, icon: "✨", label: "ジャンル別の相性分析が使えます",      sub: "さらに投稿するほど、分析の精度が増します" },
+    { min: 18, max: 20, icon: "⭐", label: "もう目前です",                        sub: "あと2件で食体験インサイトが解放されます" },
+    { min: 20, max: 25, icon: "✨", label: "食体験インサイトが使えます",      sub: "さらに投稿するほど、分析の精度が増します" },
     { min: 25, max: 30, icon: "✨", label: "あなたの食の地図が広がっています",    sub: "30件でより詳細なGAP傾向レポートが精度アップします" },
     { min: 30, max: 35, icon: "🎖️", label: "GAP傾向レポートの精度が上がりました", sub: "分析がさらに深まっています" },
     { min: 35, max: 40, icon: "🎖️", label: "食の審美眼が研ぎ澄まされています",   sub: "40件達成まであと少しです" },
@@ -969,7 +1028,7 @@ function ReviewProgressBar({ count }) {
   const milestones = [
     { at: 5,  icon: "📊", label: "傾向が見えはじめる" },
     { at: 10, icon: "🔍", label: "好みの核心に近づく" },
-    { at: 20, icon: "✨", label: "ジャンル別相性分析＆レポート解放" },
+    { at: 20, icon: "✨", label: "食体験インサイト解放" },
     { at: 30, icon: "🎖️", label: "GAP傾向レポート精度アップ" },
     { at: 50, icon: "🏆", label: "上級グルメ認定" },
   ];
@@ -989,7 +1048,7 @@ function ReviewProgressBar({ count }) {
         <div style={{ height: "100%", borderRadius: 99, background: done ? "linear-gradient(90deg,#c9a96e,#e8c97a)" : "linear-gradient(90deg,#c9a96e,#dfc080)", width: `${pct}%`, transition: "width 0.6s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: done ? "0 0 8px #c9a96e66" : "none" }} />
       </div>
       <p style={{ fontSize: 11, color: done ? accent : "#9a9088" }}>
-        {done ? "🎉 ジャンル別の相性分析とレポートが使えるようになりました" : <>{stage.sub}（あと<span style={{ color: accent, fontWeight: 700 }}>{remaining}件</span>）</>}
+        {done ? "🎉 食体験インサイトが解放されました — マイページで確認できます" : <>{stage.sub}（あと<span style={{ color: accent, fontWeight: 700 }}>{remaining}件</span>）</>}
       </p>
       <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
         {milestones.map(m => (
@@ -1277,10 +1336,10 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users, wish
                 const store = stores.find(s => s.id === r.storeId);
                 const matchResult = store ? calcMatchScore(store.id, currentUser, reviews, stores) : null;
                 return (
-                  <div key={item.type + "-" + r.id + "-" + i} onClick={() => navigate("store", r.storeId)} style={{ cursor: "pointer" }}>
+                  <button key={item.type + "-" + r.id + "-" + i} onClick={(e) => { e.stopPropagation(); navigate("store", r.storeId); }} style={{ ...staggerStyle, cursor: "pointer", background: "none", border: "none", padding: 0, width: "100%", textAlign: "left", font: "inherit", color: "inherit", display: "block" }}>
                     <FeedLabel type={item.type} />
                     <ReviewCard review={r} storeName={store?.name} showStore currentUserType={currentUser.userType} navigate={navigate} matchResult={matchResult} />
-                  </div>
+                  </button>
                 );
               }
             })}
@@ -1744,6 +1803,30 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
             {gap && <p style={{ fontSize: 20, color: gap.color, fontWeight: 700, letterSpacing: "0.06em" }}>{gap.label}</p>}
           </div>
         </div>
+        {/* ── 20件達成プレゼンテーション ── */}
+        {myAllReviews.length >= 20 && myAllReviews.length <= 22 && (() => {
+          const insight = analyzeExpectationPattern(myAllReviews);
+          if (!insight) return null;
+          const t = insight.type;
+          return (
+            <div className="post-up2" style={{ background: `linear-gradient(135deg, ${t.color}08, ${t.color}18)`, border: `1px solid ${t.color}44`, borderRadius: 12, padding: "24px 20px", marginBottom: 14, textAlign: "center" }}>
+              <style>{`
+                @keyframes unlockSpin{0%{transform:rotateY(0)}50%{transform:rotateY(180deg)}100%{transform:rotateY(360deg)}}
+                .unlock-icon{animation:unlockSpin 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.3s both;display:inline-block}
+              `}</style>
+              <p style={{ fontSize: 10, color: t.color, letterSpacing: "0.3em", marginBottom: 12, textTransform: "uppercase" }}>✦ Insight Unlocked ✦</p>
+              <div className="unlock-icon" style={{ fontSize: 48, marginBottom: 10 }}>{t.icon}</div>
+              <p style={{ fontSize: 18, color: t.color, fontWeight: 700, letterSpacing: "0.06em", marginBottom: 6 }}>{t.label}</p>
+              <p style={{ fontSize: 12, color: "#7a7268", lineHeight: 1.8, marginBottom: 14 }}>{t.desc}</p>
+              <div style={{ display: "flex", justifyContent: "center", gap: 16, fontSize: 11, color: "#9a9088" }}>
+                <span>期待精度 <span style={{ color: t.color, fontWeight: 700 }}>{insight.calibration}%</span></span>
+                <span>ベストは<span style={{ color: t.color, fontWeight: 700 }}>{insight.bestLevel === "high" ? "高い期待" : insight.bestLevel === "low" ? "控えめな期待" : "普通の期待"}</span>の時</span>
+              </div>
+              <button onClick={() => navigate("profile")} style={{ marginTop: 16, background: t.color, border: "none", color: "#fff", padding: "10px 24px", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", borderRadius: 3 }}>マイページで詳しく見る →</button>
+            </div>
+          );
+        })()}
+
         {newRecs.length > 0 && (
           <div className="post-up2" style={{ background: "#fff", border: "1px solid #c9a96e44", borderLeft: "4px solid #c9a96e", borderRadius: 8, padding: "16px 18px", marginBottom: 14 }}>
             <p style={{ fontSize: 10, color: "#c9a96e", letterSpacing: "0.2em", marginBottom: 14 }}>✦ このレビューであなたへのおすすめが更新されました</p>
@@ -1790,8 +1873,8 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
             <div style={{ height: "100%", borderRadius: 99, background: "linear-gradient(90deg,#c9a96e,#e8c97a)", width: `${Math.min(myAllReviews.length / max20 * 100, 100)}%`, transition: "width 1s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: "0 0 8px #c9a96e44" }} />
           </div>
           {remaining20 > 0
-            ? <p style={{ fontSize: 11, color: "#9a9088" }}>あと<span style={{ color: "#c9a96e", fontWeight: 700 }}>{remaining20}件</span>でジャンル別の相性分析が解放されます</p>
-            : <p style={{ fontSize: 11, color: "#c9a96e" }}>🎉 ジャンル別の相性分析とレポートが使えるようになりました</p>
+            ? <p style={{ fontSize: 11, color: "#9a9088" }}>あと<span style={{ color: "#c9a96e", fontWeight: 700 }}>{remaining20}件</span>で食体験インサイトが解放されます</p>
+            : <p style={{ fontSize: 11, color: "#c9a96e" }}>🎉 食体験インサイトが解放されました — マイページで確認できます</p>
           }
         </div>
         <div className="post-up4" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -2281,6 +2364,104 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
       </div>
 
       <ReviewProgressBar count={myReviews.length} />
+
+      {/* ── 食体験インサイト（20件以上で表示） ── */}
+      {(() => {
+        const insight = analyzeExpectationPattern(myReviews);
+        if (!insight) return null;
+        const t = insight.type;
+        const levelLabels = { high: "かなり期待", normal: "普通に期待", low: "あまり期待せず" };
+        return (
+          <div style={{ marginBottom: 28 }}>
+            <SectionLabel>あなたの食体験インサイト</SectionLabel>
+            {/* タイプカード */}
+            <div style={{ background: `linear-gradient(135deg, ${t.color}06, ${t.color}14)`, border: `1px solid ${t.color}33`, borderRadius: 10, padding: "22px 20px", marginTop: 16, marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                <div style={{ width: 52, height: 52, background: t.color + "22", border: `2px solid ${t.color}55`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>{t.icon}</div>
+                <div>
+                  <p style={{ fontSize: 10, color: "#9a9088", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 3 }}>Your Expectation Type</p>
+                  <p style={{ fontSize: 18, color: t.color, fontWeight: 700, letterSpacing: "0.04em" }}>{t.label}</p>
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: "#7a7268", lineHeight: 1.8, marginBottom: 12 }}>{t.desc}</p>
+              <div style={{ background: t.color + "11", borderRadius: 6, padding: "10px 14px" }}>
+                <p style={{ fontSize: 11, color: t.color, fontWeight: 600 }}>💡 {t.advice}</p>
+              </div>
+            </div>
+
+            {/* ① 期待キャリブレーション */}
+            <div style={{ background: "#ffffff", border: "1px solid #c9a96e33", borderRadius: 8, padding: "18px 20px", marginBottom: 10 }}>
+              <p style={{ fontSize: 10, color: "#9a9088", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 12 }}>期待キャリブレーション</p>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 10 }}>
+                <CountUpNum value={insight.calibration} style={{ fontSize: 32, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e", fontWeight: 400 }} />
+                <span style={{ fontSize: 14, color: "#9a9088" }}>%</span>
+                <span style={{ fontSize: 11, color: "#7a7268", marginLeft: 4 }}>の確率で期待通りに着地</span>
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {["high","normal","low"].map(lv => {
+                  const rate = insight.rates[lv];
+                  const cnt = insight.levelCounts[lv];
+                  const isBest = lv === insight.bestLevel;
+                  return (
+                    <div key={lv} style={{ flex: 1, background: isBest ? "#c9a96e11" : "#faf8f5", border: `1px solid ${isBest ? "#c9a96e55" : "#c9a96e22"}`, borderRadius: 6, padding: "10px 8px", textAlign: "center" }}>
+                      <p style={{ fontSize: 10, color: isBest ? "#c9a96e" : "#9a9088", marginBottom: 4 }}>{levelLabels[lv]}</p>
+                      <p style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: isBest ? "#c9a96e" : "#7a7268", fontWeight: isBest ? 700 : 400 }}>{rate !== null ? rate + "%" : "-"}</p>
+                      <p style={{ fontSize: 9, color: "#c4b9ac", marginTop: 2 }}>{cnt}件</p>
+                      {isBest && <p style={{ fontSize: 9, color: "#c9a96e", marginTop: 3, fontWeight: 600 }}>⭐ ベスト</p>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ② ベスト・ディスカバリー */}
+            <div style={{ background: "#ffffff", border: "1px solid #c9a96e33", borderRadius: 8, padding: "18px 20px", marginBottom: 10 }}>
+              <p style={{ fontSize: 10, color: "#9a9088", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 10 }}>ベスト・ディスカバリー・パターン</p>
+              <p style={{ fontSize: 13, color: "#2c2420", lineHeight: 1.8 }}>
+                あなたが最もよい体験をしているのは<span style={{ color: t.color, fontWeight: 700 }}>「{levelLabels[insight.bestLevel]}」</span>で行った時です。
+                よかった率は<span style={{ color: "#1abc9c", fontWeight: 700 }}>{insight.bestRate}%</span>。
+                {insight.bestLevel === "high" ? "高い期待を持って行く時、あなたの選択眼は冴えています。" : insight.bestLevel === "low" ? "ふらっと入った店で最高の体験をする才能があります。" : "バランスよく期待する時が最もいい結果を生んでいます。"}
+              </p>
+            </div>
+
+            {/* ③ ギャップ・ハイライト */}
+            <div style={{ background: "#ffffff", border: "1px solid #c9a96e33", borderRadius: 8, padding: "18px 20px" }}>
+              <p style={{ fontSize: 10, color: "#9a9088", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 12 }}>ギャップ・ハイライト</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {insight.bestSurprise && (() => {
+                  const s = stores.find(st => st.id === insight.bestSurprise.storeId);
+                  return s ? (
+                    <button onClick={() => navigate("store", s.id)} style={{ background: "#1abc9c08", border: "1px solid #1abc9c33", borderRadius: 6, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, textAlign: "left", color: "#2c2420", width: "100%" }}>
+                      <span style={{ fontSize: 24 }}>{s.image}</span>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: 9, color: "#1abc9c", letterSpacing: "0.15em", marginBottom: 3 }}>🚀 BEST SURPRISE</p>
+                        <p style={{ fontSize: 13, fontWeight: 600 }}>{s.name}</p>
+                        <p style={{ fontSize: 10, color: "#9a9088" }}>あまり期待せずに行って → 期待以上！</p>
+                      </div>
+                    </button>
+                  ) : null;
+                })()}
+                {insight.biggestGap && (() => {
+                  const s = stores.find(st => st.id === insight.biggestGap.storeId);
+                  return s ? (
+                    <button onClick={() => navigate("store", s.id)} style={{ background: "#e74c3c06", border: "1px solid #e74c3c22", borderRadius: 6, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, textAlign: "left", color: "#2c2420", width: "100%" }}>
+                      <span style={{ fontSize: 24 }}>{s.image}</span>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: 9, color: "#e74c3c", letterSpacing: "0.15em", marginBottom: 3 }}>↓ BIGGEST GAP</p>
+                        <p style={{ fontSize: 13, fontWeight: 600 }}>{s.name}</p>
+                        <p style={{ fontSize: 10, color: "#9a9088" }}>かなり期待して行って → ちょっと残念</p>
+                      </div>
+                    </button>
+                  ) : null;
+                })()}
+                {!insight.bestSurprise && !insight.biggestGap && (
+                  <p style={{ fontSize: 12, color: "#9a9088", textAlign: "center", padding: 12 }}>まだ極端なギャップ体験はありません</p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, marginBottom: 24 }}>
         {[{ label: "投稿数", key: "all", value: reviewCounts.all }, { label: "よかった！", key: "beyond", value: reviewCounts.beyond }, { label: "残念だった", key: "below", value: reviewCounts.below }].map(({ label, key, value }) => (
@@ -2872,7 +3053,11 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
 
   return (
     <div style={{ position: "relative" }}>
-      <div onClick={() => navigate("store", store.id)} className="card-morph-e" style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 8, width: "100%", cursor: "pointer" }}>
+      <div className="card-morph-e" style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 8, width: "100%", position: "relative" }}>
+      {/* 透明なボタンオーバーレイ — カード全体をタップ可能にする */}
+      <button onClick={(e) => { e.stopPropagation(); navigate("store", store.id); }}
+        aria-label={store.name + "を見る"}
+        style={{ position: "absolute", inset: 0, zIndex: 1, background: "transparent", border: "none", cursor: "pointer", borderRadius: 8 }} />
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
         <span style={{ fontSize: 30 }}>{store.image}</span>
         <div style={{ flex: 1 }}>
@@ -2882,11 +3067,11 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
           </div>
           <p style={{ fontSize: 11, color: "#7a7268" }}>{store.area} / {store.category}</p>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0, position: "relative", zIndex: 2 }}>
           <span style={{ fontSize: 11, color: "#c9a96e" }}>{store.priceRange}</span>
           {currentUser && (
             <button
-              onClick={toggleWishlist}
+              onClick={(e) => { e.stopPropagation(); toggleWishlist(e); }}
               title={isWished ? "行ってみたいリストから削除" : "行ってみたいリストに追加"}
               style={{
                 background: isWished ? "#e67e2222" : "#faf8f5",
