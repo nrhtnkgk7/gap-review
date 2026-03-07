@@ -1405,15 +1405,37 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
   const [localQ, setLocalQ] = useState(searchQ);
   const [sortBy, setSortBy] = useState(currentUser ? "match" : "reviews");
   const [filterCat, setFilterCat] = useState("all");
+  const [displayCount, setDisplayCount] = useState(20);
   const categories = ["all", ...new Set(stores.map(s => s.category))];
 
-  const storesWithScore = stores.map(s => ({
+  // レビュー件数をMapで事前計算（O(n)→O(1)ルックアップ）
+  const reviewCountMap = {};
+  reviews.forEach(r => { reviewCountMap[r.storeId] = (reviewCountMap[r.storeId] || 0) + 1; });
+
+  // マッチスコアはソートに必要な場合のみ全店舗計算、それ以外は表示分だけ遅延計算
+  const needAllScores = sortBy === "match" && !!currentUser;
+  const scoreCache = useRef({});
+
+  const getScore = (storeId) => {
+    if (!currentUser) return null;
+    if (scoreCache.current[storeId] !== undefined) return scoreCache.current[storeId];
+    const result = calcMatchScore(storeId, currentUser, reviews, stores);
+    scoreCache.current[storeId] = result;
+    return result;
+  };
+
+  // ユーザーやレビューが変わったらキャッシュをクリア
+  const cacheKey = (currentUser?.id || "") + "-" + reviews.length;
+  const prevCacheKey = useRef("");
+  if (prevCacheKey.current !== cacheKey) { scoreCache.current = {}; prevCacheKey.current = cacheKey; }
+
+  const storesWithMeta = stores.map(s => ({
     ...s,
-    matchResult: currentUser ? calcMatchScore(s.id, currentUser, reviews, stores) : null,
-    reviewCount: reviews.filter(r => r.storeId === s.id).length,
+    matchResult: needAllScores ? getScore(s.id) : null,
+    reviewCount: reviewCountMap[s.id] || 0,
   }));
 
-  const filtered = storesWithScore
+  const filtered = storesWithMeta
     .filter(s => {
       const q = localQ.toLowerCase();
       return (!q || s.name.includes(q) || s.category.includes(q) || s.area.includes(q)) && (filterCat === "all" || s.category === filterCat);
@@ -1429,6 +1451,19 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
       }
       return a.name.localeCompare(b.name, "ja");
     });
+
+  // フィルター/ソート変更時にページネーションをリセット
+  const prevFilter = useRef({ localQ, sortBy, filterCat });
+  if (prevFilter.current.localQ !== localQ || prevFilter.current.sortBy !== sortBy || prevFilter.current.filterCat !== filterCat) {
+    prevFilter.current = { localQ, sortBy, filterCat };
+    if (displayCount !== 20) setDisplayCount(20);
+  }
+
+  const visible = filtered.slice(0, displayCount).map(s => ({
+    ...s,
+    matchResult: s.matchResult || getScore(s.id),
+  }));
+  const hasMore = displayCount < filtered.length;
 
   return (
     <div className="fade-in" style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 16px" }}>
@@ -1483,10 +1518,17 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
           }}>{cat === "all" ? "すべて" : cat}</button>
         ))}
       </div>
-      <p style={{ marginTop: 14, fontSize: 11, color: "#9a9088", letterSpacing: "0.08em" }}>{filtered.length} 件</p>
+      <p style={{ marginTop: 14, fontSize: 11, color: "#9a9088", letterSpacing: "0.08em" }}>{filtered.length} 件{hasMore && ` （${visible.length}件表示中）`}</p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 14, marginTop: 12 }}>
-        {filtered.map(store => <StoreCard key={store.id} store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} currentUser={currentUser} allReviews={reviews} allStores={stores} precomputedResult={store.matchResult} wishlists={wishlists} setWishlists={setWishlists} />)}
+        {visible.map(store => <StoreCard key={store.id} store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} currentUser={currentUser} allReviews={reviews} allStores={stores} precomputedResult={store.matchResult} wishlists={wishlists} setWishlists={setWishlists} />)}
       </div>
+      {hasMore && (
+        <div style={{ textAlign: "center", marginTop: 24 }}>
+          <button onClick={() => setDisplayCount(prev => prev + 20)} style={{ background: "#ffffff", border: "1px solid #c9a96e44", color: "#c9a96e", padding: "12px 36px", fontSize: 13, letterSpacing: "0.1em", borderRadius: 3 }}>
+            もっと見る（残り {filtered.length - displayCount} 件）
+          </button>
+        </div>
+      )}
       {filtered.length === 0 && (
         <div style={{ textAlign: "center", padding: "80px 0", color: "#9a9088" }}>
           <p style={{ fontSize: 36, marginBottom: 14 }}>🔍</p>
