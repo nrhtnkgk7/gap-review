@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = "https://hhnhzvxfqwhfhcewbpye.supabase.co";
@@ -846,10 +846,16 @@ export default function App() {
     };
   }, []);
 
+  // ナビゲーションロック：ゴーストクリックによる二重遷移を防止
+  const navLock = useRef(false);
   const navigate = (p, param = null) => {
-    // ブラウザ履歴に追加
+    if (navLock.current) return;
+    navLock.current = true;
     window.history.pushState({ page: p, param }, "", `#${p}${param ? `/${param}` : ""}`);
-    setPage(p); setPageParam(param); window.scrollTo(0, 0);
+    setPage(p); setPageParam(param);
+    // scrollToをRAFで遅延し、タッチイベントシーケンス完了後に実行
+    requestAnimationFrame(() => window.scrollTo(0, 0));
+    setTimeout(() => { navLock.current = false; }, 400);
   };
 
   // ブラウザの戻る/進むボタン対応
