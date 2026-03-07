@@ -678,8 +678,11 @@ function MatchBadge({ matchResult, compact }) {
           )}
           {/* スコア弧 */}
           <circle cx="18" cy="18" r="14" fill="none" stroke={color} strokeWidth="3"
-            strokeDasharray={dashArray} strokeLinecap="round"
+            strokeDasharray={`${circumference} ${circumference}`}
+            strokeDashoffset={animated ? circumference - filled : circumference}
+            strokeLinecap="round"
             opacity={isEstimate ? 0.5 : 1}
+            style={{ transition: "stroke-dashoffset 0.9s cubic-bezier(0.4,0,0.2,1)" }}
           />
         </svg>
         <span style={{
@@ -862,6 +865,14 @@ export default function App() {
         button:active{filter:brightness(0.75);transform:scale(0.97)}
         ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0c0c0e}::-webkit-scrollbar-thumb{background:#3a3028;border-radius:2px}
         @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes heartBounce{0%{transform:scale(1)}30%{transform:scale(1.5)}60%{transform:scale(0.88)}80%{transform:scale(1.15)}100%{transform:scale(1)}}
+        @keyframes slideInRight{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes slideInLeft{from{opacity:0;transform:translateX(-32px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes feedFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+        .heart-bounce{animation:heartBounce 0.45s cubic-bezier(0.36,0.07,0.19,0.97)}
+        .slide-in-right{animation:slideInRight 0.3s ease forwards}
+        .slide-in-left{animation:slideInLeft 0.3s ease forwards}
+        .feed-fade{animation:feedFade 0.3s ease forwards}
         @keyframes shineLR{0%{transform:translateX(-200%) skewX(20deg)}100%{transform:translateX(300%) skewX(20deg)}}
         .shine-btn{position:relative;overflow:hidden}
         .shine-btn::after{content:'';position:absolute;top:-50%;left:0;width:55%;height:200%;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.35) 50%,transparent 100%);animation:shineLR 6s linear infinite;pointer-events:none}
@@ -939,7 +950,7 @@ function ReviewProgressBar({ count }) {
   const stage = stages.find(s => count >= s.min && count < s.max) || stages[stages.length - 1];
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #c9a96e33", borderRadius: 8, padding: "14px 16px", marginBottom: 20 }}>
+    <div style={{ background: "#fffdf5", border: "1px solid #c9a96e55", borderLeft: "4px solid #c9a96e", borderRadius: 8, padding: "14px 16px", marginBottom: 20 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: 15 }}>{stage.icon}</span>
@@ -1184,7 +1195,7 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users, wish
             </div>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div key={feedFilter} className="feed-fade" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {visibleFeed.map((item, i) => {
               if (item.type === "recommend") {
                 const store = item.data;
@@ -1344,9 +1355,6 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
       )}
       <div style={{ marginTop: 18, display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input value={localQ} onChange={e => { setLocalQ(e.target.value); setSearchQ(e.target.value); }} placeholder="店名・エリア・カテゴリ..." style={{ flex: 1, minWidth: 150, background: "#f5f0e8", border: "1px solid #c9a96e44", borderRadius: 3, padding: "10px 14px", color: "#2c2420", outline: "none" }} />
-        <select value={filterCat} onChange={e => setFilterCat(e.target.value)} style={{ background: "#f5f0e8", border: "1px solid #c9a96e44", color: "#8a8278", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
-          {categories.map(c => <option key={c} value={c}>{c === "all" ? "全カテゴリ" : c}</option>)}
-        </select>
         <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: "#f5f0e8", border: "1px solid #c9a96e44", color: "#8a8278", padding: "10px 12px", outline: "none", borderRadius: 3 }}>
           {currentUser && <option value="match">相性順</option>}
           <option value="reviews">レビュー数順</option>
@@ -1354,6 +1362,17 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
           <option value="latest-review">新口コミ順</option>
           <option value="name">名前順</option>
         </select>
+      </div>
+      <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {categories.map(cat => (
+          <button key={cat} onClick={() => setFilterCat(cat)} style={{
+            background: filterCat === cat ? "#c9a96e" : "#ffffff",
+            border: `1px solid ${filterCat === cat ? "#c9a96e" : "#c9a96e44"}`,
+            color: filterCat === cat ? "#faf8f5" : "#7a7268",
+            padding: "5px 12px", fontSize: 11, borderRadius: 20,
+            letterSpacing: "0.04em", transition: "all 0.15s", cursor: "pointer",
+          }}>{cat === "all" ? "すべて" : cat}</button>
+        ))}
       </div>
       <p style={{ marginTop: 14, fontSize: 11, color: "#9a9088", letterSpacing: "0.08em" }}>{filtered.length} 件</p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 14, marginTop: 12 }}>
@@ -1618,7 +1637,7 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
   );
 }
 
-function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pageParam, notify }) {
+function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pageParam, notify, users, follows }) {
   const [storeId, setStoreId] = useState(pageParam || "");
   const [storeQ, setStoreQ] = useState(pageParam ? (stores.find(s => s.id === pageParam)?.name || "") : "");
   const [showSug, setShowSug] = useState(false);
@@ -1644,17 +1663,102 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
     setSubmitted(true); notify("レビューを投稿しました");
   };
 
-  if (submitted) return (
-    <div className="fade-in" style={{ maxWidth: 500, margin: "100px auto", padding: "0 20px", textAlign: "center" }}>
-      <p style={{ fontSize: 44, marginBottom: 22 }}>✓</p>
-      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 14 }}>レビューを投稿しました</h2>
-      {gap && <p style={{ fontSize: 18, color: gap.color, letterSpacing: "0.1em", marginBottom: 28 }}>{gap.emoji} {gap.label}</p>}
-      <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-        <button onClick={() => navigate("store", storeId)} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "12px 26px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>店舗ページへ</button>
-        <button onClick={() => { setSubmitted(false); setStoreId(""); setStoreQ(""); setPreExpect(""); setResult(""); setComment(""); }} style={{ background: "none", border: "1px solid #c9a96e44", color: "#2c2420", padding: "12px 26px", fontSize: 13 }}>続けて投稿</button>
+  if (submitted) {
+    const postedStore = stores.find(s => s.id === storeId);
+    const myAllReviews = reviews.filter(r => r.userId === currentUser.id);
+    const max20 = 20; const remaining20 = Math.max(max20 - myAllReviews.length, 0);
+    // 同タイプで同じ店を高評価したユーザー
+    const sameTypeHighUsers = users
+      ? reviews.filter(r => r.storeId === storeId && r.userType === currentUser.userType && r.userId !== currentUser.id && (r.result === "Good" || r.result === "Expected"))
+          .map(r => users.find(u => u.id === r.userId)).filter(Boolean).slice(0, 3)
+      : [];
+    // 投稿後のレコメンド（未訪問・相性高い順）
+    const visitedIds = new Set(reviews.filter(r => r.userId === currentUser.id).map(r => r.storeId));
+    const newRecs = stores
+      .filter(s => !visitedIds.has(s.id))
+      .map(s => ({ ...s, matchResult: calcMatchScore(s.id, currentUser, reviews, stores) }))
+      .filter(s => s.matchResult && s.matchResult.score >= 60)
+      .sort((a, b) => b.matchResult.score - a.matchResult.score)
+      .slice(0, 2);
+    return (
+      <div style={{ maxWidth: 500, margin: "0 auto", padding: "48px 20px" }}>
+        <style>{`
+          @keyframes popIn{0%{opacity:0;transform:scale(0.6)}65%{transform:scale(1.1)}100%{opacity:1;transform:scale(1)}}
+          @keyframes fadeUpPost{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+          .post-pop{animation:popIn 0.55s cubic-bezier(0.34,1.56,0.64,1) forwards}
+          .post-up1{opacity:0;animation:fadeUpPost 0.4s ease 0.25s forwards}
+          .post-up2{opacity:0;animation:fadeUpPost 0.4s ease 0.45s forwards}
+          .post-up3{opacity:0;animation:fadeUpPost 0.4s ease 0.65s forwards}
+          .post-up4{opacity:0;animation:fadeUpPost 0.4s ease 0.85s forwards}
+        `}</style>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div className="post-pop" style={{ fontSize: 58, marginBottom: 14, display: "inline-block" }}>{gap ? gap.emoji : "✓"}</div>
+          <div className="post-up1">
+            <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 11, color: "#c9a96e", letterSpacing: "0.3em", marginBottom: 8 }}>REVIEW POSTED</p>
+            {postedStore && <p style={{ fontSize: 16, fontWeight: 700, color: "#2c2420", marginBottom: 4 }}>{postedStore.image} {postedStore.name}</p>}
+            {gap && <p style={{ fontSize: 20, color: gap.color, fontWeight: 700, letterSpacing: "0.06em" }}>{gap.label}</p>}
+          </div>
+        </div>
+        {newRecs.length > 0 && (
+          <div className="post-up2" style={{ background: "#fff", border: "1px solid #c9a96e44", borderLeft: "4px solid #c9a96e", borderRadius: 8, padding: "16px 18px", marginBottom: 14 }}>
+            <p style={{ fontSize: 10, color: "#c9a96e", letterSpacing: "0.2em", marginBottom: 14 }}>✦ このレビューであなたへのおすすめが更新されました</p>
+            {newRecs.map((s, i) => (
+              <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < newRecs.length - 1 ? "1px solid #c9a96e18" : "none" }}>
+                <span style={{ fontSize: 24 }}>{s.image}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "#2c2420" }}>{s.name}</p>
+                    {i === 0 && <span style={{ fontSize: 9, background: "#c9a96e", color: "#fff", padding: "1px 6px", borderRadius: 20 }}>NEW</span>}
+                  </div>
+                  <p style={{ fontSize: 11, color: "#9a9088" }}>{s.area} · {s.category}</p>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <p style={{ fontSize: 16, color: "#c9a96e", fontWeight: 700, fontFamily: "'Cormorant Garamond',serif" }}>{s.matchResult.score}<span style={{ fontSize: 11, fontWeight: 400 }}>%</span></p>
+                  <p style={{ fontSize: 10, color: "#9a9088" }}>相性</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {sameTypeHighUsers.length > 0 && (
+          <div className="post-up3" style={{ background: "#fff", border: "1px solid #c9a96e33", borderRadius: 8, padding: "14px 18px", marginBottom: 14 }}>
+            <p style={{ fontSize: 10, color: "#9a9088", letterSpacing: "0.15em", marginBottom: 12 }}>👥 同じタイプのユーザーも高評価しています</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {sameTypeHighUsers.map(u => {
+                const ut = USER_TYPES[u.userType || u.user_type];
+                return (
+                  <button key={u.id} onClick={() => navigate("user-profile", u.id)} style={{ display: "flex", alignItems: "center", gap: 6, background: "#f5f0e8", borderRadius: 20, padding: "5px 12px", border: "none", cursor: "pointer" }}>
+                    <span style={{ fontSize: 13 }}>{ut?.icon}</span>
+                    <span style={{ fontSize: 12, color: "#2c2420", fontWeight: 600 }}>{u.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        <div className="post-up3" style={{ background: "#fffdf5", border: "1px solid #c9a96e55", borderLeft: "4px solid #c9a96e", borderRadius: 8, padding: "14px 16px", marginBottom: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#2c2420" }}>🔍 好みの核心に近づいています</span>
+            <span style={{ fontSize: 11, color: "#9a9088" }}>{myAllReviews.length} / {max20}件</span>
+          </div>
+          <div style={{ background: "#f0ece4", borderRadius: 99, height: 7, overflow: "hidden", marginBottom: 8 }}>
+            <div style={{ height: "100%", borderRadius: 99, background: "linear-gradient(90deg,#c9a96e,#e8c97a)", width: `${Math.min(myAllReviews.length / max20 * 100, 100)}%`, transition: "width 1s cubic-bezier(0.34,1.56,0.64,1)", boxShadow: "0 0 8px #c9a96e44" }} />
+          </div>
+          {remaining20 > 0
+            ? <p style={{ fontSize: 11, color: "#9a9088" }}>あと<span style={{ color: "#c9a96e", fontWeight: 700 }}>{remaining20}件</span>でジャンル別の相性分析が解放されます</p>
+            : <p style={{ fontSize: 11, color: "#c9a96e" }}>🎉 ジャンル別の相性分析とレポートが使えるようになりました</p>
+          }
+        </div>
+        <div className="post-up4" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <button onClick={() => { setSubmitted(false); setStoreId(""); setStoreQ(""); setPreExpect(""); setResult(""); setComment(""); }} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "14px", fontSize: 13, fontWeight: 600, letterSpacing: "0.12em", borderRadius: 4 }}>続けてレビューを書く +</button>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => navigate("store", storeId)} style={{ flex: 1, background: "none", border: "1px solid #c9a96e44", color: "#2c2420", padding: "12px", fontSize: 12, borderRadius: 4 }}>{postedStore?.name || "店舗"}のページへ</button>
+            <button onClick={() => { if (navigator.clipboard) navigator.clipboard.writeText(`gap-review.com`).then(() => notify("URLをコピーしました")); }} style={{ flex: 1, background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "12px", fontSize: 12, borderRadius: 4 }}>🔗 シェア</button>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
     <div className="fade-in" style={{ maxWidth: 540, margin: "0 auto", padding: "44px 16px" }}>
@@ -1687,6 +1791,7 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
           )}
         </FormSection>
 
+        <div className={storeId ? "slide-in-right" : ""} key={storeId || "empty"}>
         <FormSection label="訪問前の気分・期待" required>
           <div style={{ display: "flex", gap: 8 }}>
             {[["low","あまり期待してない"],["normal","普通に期待"],["high","かなり期待"]].map(([v,l]) => (
@@ -1717,6 +1822,7 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
         <FormSection label="コメント（任意）">
           <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="体験についての自由なコメント..." rows={4} style={{ width: "100%", background: "#f5f0e8", border: "1px solid #c9a96e44", borderRadius: 3, padding: "12px 16px", color: "#2c2420", resize: "vertical", outline: "none", lineHeight: 1.7 }} />
         </FormSection>
+        </div>
 
         <button onClick={handleSubmit} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "16px", fontSize: 14, letterSpacing: "0.15em", fontWeight: 600, borderRadius: 2 }}>投稿する</button>
       </div>
@@ -2105,11 +2211,11 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
 
       <div style={{ display: "flex", gap: 20, marginBottom: 24 }}>
         <button onClick={() => setFollowTab("following")} style={{ background: "none", border: "none", padding: 0, color: "#2c2420", textAlign: "left" }}>
-          <span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{myFollowingIds.length}</span>
+          <CountUpNum value={myFollowingIds.length} style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }} />
           <span style={{ fontSize: 11, color: "#7a7268", marginLeft: 5 }}>フォロー中</span>
         </button>
         <button onClick={() => setFollowTab("followers")} style={{ background: "none", border: "none", padding: 0, color: "#2c2420", textAlign: "left" }}>
-          <span style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }}>{myFollowerIds.length}</span>
+          <CountUpNum value={myFollowerIds.length} style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: "#c9a96e" }} />
           <span style={{ fontSize: 11, color: "#7a7268", marginLeft: 5 }}>フォロワー</span>
         </button>
       </div>
@@ -2119,7 +2225,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, marginBottom: 24 }}>
         {[{ label: "投稿数", key: "all", value: reviewCounts.all }, { label: "よかった！", key: "beyond", value: reviewCounts.beyond }, { label: "残念だった", key: "below", value: reviewCounts.below }].map(({ label, key, value }) => (
           <button key={key} onClick={() => { setReviewFilter(key); setContentTab("reviews"); }} style={{ background: contentTab === "reviews" && reviewFilter === key ? "#f5f0e8" : "#ffffff", padding: "18px", textAlign: "center", border: "1px solid #c9a96e44", color: "#2c2420", cursor: "pointer" }}>
-            <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, color: "#c9a96e", marginBottom: 4 }}>{value}</p>
+            <CountUpNum value={value} style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, color: "#c9a96e", display: "block", marginBottom: 4 }} />
             <p style={{ fontSize: 11, color: "#7a7268", letterSpacing: "0.1em" }}>{label}</p>
           </button>
         ))}
@@ -2336,7 +2442,7 @@ function UsersPage({ navigate, currentUser, users, reviews, stores, follows }) {
         {sorted.map(u => {
           const matchColor = u.tasteMatch >= 70 ? "#1abc9c" : u.tasteMatch >= 50 ? "#f39c12" : "#7a7268";
           return (
-            <button key={u.id} onClick={() => navigate("user-profile", u.id)} style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", color: "#2c2420", width: "100%" }}>
+            <button key={u.id} onClick={() => navigate("user-profile", u.id)} style={{ background: "#ffffff", border: "1px solid #c9a96e44", borderLeft: `3px solid ${u.ut?.color || "#c9a96e"}`, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", color: "#2c2420", width: "100%", transition: "all 0.2s" }}>
               <div style={{ width: 42, height: 42, background: (u.ut?.color || "#7a7268") + "22", border: `1px solid ${(u.ut?.color || "#7a7268")}44`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{u.ut?.icon || "👤"}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -2684,6 +2790,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
     ? precomputedResult
     : (currentUser && allReviews && allStores ? calcMatchScore(store.id, currentUser, allReviews, allStores) : null);
 
+  const [justWished, setJustWished] = React.useState(false);
   const isWished = currentUser && (wishlists?.[currentUser.id] || []).includes(store.id);
   const toggleWishlist = async (e) => {
     e.stopPropagation();
@@ -2691,9 +2798,12 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
     if (isWished) {
       await supabase.from("wishlists").delete().eq("user_id", currentUser.id).eq("store_id", store.id);
       setWishlists(prev => ({ ...prev, [currentUser.id]: (prev[currentUser.id] || []).filter(id => id !== store.id) }));
+      setJustWished(false);
     } else {
       await supabase.from("wishlists").insert({ user_id: currentUser.id, store_id: store.id });
       setWishlists(prev => ({ ...prev, [currentUser.id]: [...(prev[currentUser.id] || []), store.id] }));
+      setJustWished(true);
+      setTimeout(() => setJustWished(false), 4000);
     }
   };
 
@@ -2719,8 +2829,10 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: isWished ? 14 : 16,
                 color: isWished ? "#e67e22" : "#c9a96e",
-                lineHeight: 1, transition: "all 0.2s", flexShrink: 0,
+                lineHeight: 1, flexShrink: 0,
               }}
+              className={isWished ? "heart-bounce" : ""}
+              key={isWished ? "wished" : "unwished"}
             >
               {isWished ? "🍽️" : "♡"}
             </button>
@@ -2757,6 +2869,12 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
       ) : <p style={{ fontSize: 11, color: "#c4b9ac" }}>まだレビューなし</p>}
       </button>
 
+    {justWished && (
+      <div onClick={e => e.stopPropagation()} style={{ marginTop: 8, background: "#fffdf5", border: "1px solid #c9a96e55", borderRadius: 6, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <p style={{ fontSize: 11, color: "#7a7268" }}>🍽️ リストに追加しました。行ったらレビューを！</p>
+        <button onClick={(e) => { e.stopPropagation(); navigate("review-form", store.id); }} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "5px 12px", fontSize: 11, borderRadius: 20, whiteSpace: "nowrap", flexShrink: 0 }}>書く →</button>
+      </div>
+    )}
     </div>
   );
 }
