@@ -690,7 +690,7 @@ function MatchBadge({ matchResult, compact }) {
           justifyContent: "center", fontSize: 8, color, fontWeight: 700,
           opacity: isEstimate ? 0.6 : 1
         }}>
-          {isNegative ? "−" : ""}{absScore}
+          {isNegative ? "−" : ""}<CountUpNum value={absScore} />
         </span>
       </div>
       <div>
@@ -1013,18 +1013,30 @@ function BottomTabBar({ navigate, page }) {
     { id: "users",     label: "ユーザー" },
     { id: "profile",   label: "マイページ" },
   ];
+  const activeIdx = tabs.findIndex(t => t.id === page);
   return (
-    <nav className="bottom-tab-bar">
+    <nav className="bottom-tab-bar" style={{ position: "fixed", bottom: 0, left: 0, right: 0 }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2 }}>
+        <div style={{
+          position: "absolute", top: 0, height: 2, width: "20%",
+          background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
+          left: `${activeIdx * 20}%`,
+          transition: "left 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+          borderRadius: 1,
+        }} />
+      </div>
       {tabs.map(({ id, label }) => {
         const isActive = page === id;
         return (
           <button
             key={id}
             onClick={() => navigate(id)}
-            style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, padding: "4px 0" }}
+            style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, padding: "6px 0 4px" }}
           >
-            {icons[id](isActive ? accent : "#9a9088", isActive ? 2.2 : 1.6)}
-            <span style={{ fontSize: 9, fontWeight: isActive ? 700 : 400, color: isActive ? accent : "#9a9088", letterSpacing: "0.04em" }}>{label}</span>
+            <div style={{ transition: "transform 0.2s", transform: isActive ? "scale(1.1)" : "scale(1)" }}>
+              {icons[id](isActive ? accent : "#9a9088", isActive ? 2.2 : 1.6)}
+            </div>
+            <span style={{ fontSize: 9, fontWeight: isActive ? 700 : 400, color: isActive ? accent : "#9a9088", letterSpacing: "0.04em", transition: "color 0.2s" }}>{label}</span>
           </button>
         );
       })}
@@ -1216,12 +1228,13 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users, wish
             </div>
           </div>
         ) : (
-          <div key={feedFilter} className="feed-fade" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div key={feedFilter} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {visibleFeed.map((item, i) => {
+              const staggerStyle = { opacity: 0, animation: `feedFade 0.35s ease ${i * 0.06}s forwards` };
               if (item.type === "recommend") {
                 const store = item.data;
                 return (
-                  <div key={"rec-" + store.id + "-" + i}>
+                  <div key={"rec-" + store.id + "-" + i} style={staggerStyle}>
                     <FeedLabel type="recommend" />
                     <StoreCard store={store} reviews={reviews.filter(r => r.storeId === store.id)} navigate={navigate} currentUser={currentUser} allReviews={reviews} allStores={stores} precomputedResult={store.matchResult} wishlists={wishlists} setWishlists={setWishlists} />
                   </div>
@@ -1230,7 +1243,7 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users, wish
                 const store = item.data;
                 const matchResult = calcMatchScore(store.id, currentUser, reviews, stores);
                 return (
-                  <div key={"wish-" + store.id + "-" + i}>
+                  <div key={"wish-" + store.id + "-" + i} style={staggerStyle}>
                     <FeedLabel type="wishlist" />
                     <div style={{ background: "#ffffff", border: "1px solid #e67e2244", borderRadius: 3, padding: "16px 20px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
@@ -1527,17 +1540,17 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
           <p style={{ fontSize: 11, letterSpacing: "0.2em", color: "#9a9088", marginBottom: 16, textTransform: "uppercase" }}>みんなの感想</p>
           <div style={{ display: "flex" }}>
             {[["期待以上！","#1abc9c",stats.beyond],["期待通り","#f39c12",stats.match],["ちょっと残念","#e74c3c",stats.below]].map(([label,color,count]) => (
-              <div key={label} style={{ flex: 1, textAlign: "center", padding: "12px 0", borderRight: "1px solid #c9a96e44" }}>
-                <p style={{ fontSize: 24, fontFamily: "'Cormorant Garamond',serif", color, marginBottom: 4 }}>{count}</p>
+              <div key={label} style={{ flex: 1, textAlign: "center", padding: "12px 0", borderRight: "1px solid #c9a96e22" }}>
+                <p style={{ fontSize: 24, fontFamily: "'Cormorant Garamond',serif", color, marginBottom: 4 }}><CountUpNum value={count} /></p>
                 <p style={{ fontSize: 11, color, letterSpacing: "0.1em" }}>{label}</p>
-                <p style={{ fontSize: 10, color: "#9a9088", marginTop: 3 }}>{Math.round(count / stats.total * 100)}%</p>
+                <p style={{ fontSize: 10, color: "#9a9088", marginTop: 3 }}><CountUpNum value={Math.round(count / stats.total * 100)} />%</p>
               </div>
             ))}
           </div>
-          <div style={{ marginTop: 14, height: 4, background: "#c9a96e22", borderRadius: 2, overflow: "hidden", display: "flex" }}>
-            <div style={{ width: `${stats.beyond / stats.total * 100}%`, background: "#1abc9c" }} />
-            <div style={{ width: `${stats.match / stats.total * 100}%`, background: "#f39c12" }} />
-            <div style={{ width: `${stats.below / stats.total * 100}%`, background: "#e74c3c" }} />
+          <div style={{ marginTop: 14, height: 6, background: "#c9a96e11", borderRadius: 3, overflow: "hidden", display: "flex" }}>
+            <div style={{ width: `${stats.beyond / stats.total * 100}%`, background: "#1abc9c", transition: "width 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.1s", borderRadius: "3px 0 0 3px" }} />
+            <div style={{ width: `${stats.match / stats.total * 100}%`, background: "#f39c12", transition: "width 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.25s" }} />
+            <div style={{ width: `${stats.below / stats.total * 100}%`, background: "#e74c3c", transition: "width 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.4s", borderRadius: "0 3px 3px 0" }} />
           </div>
 
           {typeBreakdown.length > 0 && (
@@ -1579,9 +1592,9 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
                       <span style={{ fontSize: 10, color: "#c4b9ac", width: 24, textAlign: "right" }}>{t.count}件</span>
                     </div>
                     {/* ヒット率バー（緑）＋ミス率バー（赤）を重ねて表示 */}
-                    <div style={{ marginLeft: 28, height: 4, background: "#c9a96e22", borderRadius: 2, overflow: "hidden", display: "flex" }}>
-                      <div style={{ width: `${t.hitRate}%`, height: "100%", background: isMe ? hitColor : "#c4b9ac", transition: "width 0.4s" }} />
-                      <div style={{ width: `${t.missRate}%`, height: "100%", background: "#e74c3c55" }} />
+                    <div style={{ marginLeft: 28, height: 5, background: "#c9a96e11", borderRadius: 3, overflow: "hidden", display: "flex" }}>
+                      <div style={{ width: `${t.hitRate}%`, height: "100%", background: isMe ? hitColor : "#c4b9ac", transition: "width 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.2s", borderRadius: "3px 0 0 3px" }} />
+                      <div style={{ width: `${t.missRate}%`, height: "100%", background: "#e74c3c55", transition: "width 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.35s" }} />
                     </div>
                   </div>
                 );
@@ -1839,9 +1852,24 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
         </FormSection>
 
         {gap && (
-          <div style={{ background: gap.color + "11", border: `1px solid ${gap.color}44`, borderRadius: 4, padding: "14px 22px", textAlign: "center" }}>
-            <p style={{ fontSize: 11, color: gap.color, letterSpacing: "0.15em", marginBottom: 4, textTransform: "uppercase" }}>体験の感想</p>
-            <p style={{ fontSize: 22, color: gap.color, fontWeight: 700, letterSpacing: "0.06em" }}>{gap.emoji} {gap.label}</p>
+          <div key={preExpect + result} style={{ background: gap.color + "08", border: `1px solid ${gap.color}33`, borderRadius: 8, padding: "20px 22px", textAlign: "center", overflow: "hidden" }}>
+            <style>{`
+              @keyframes gapBarLeft{0%{transform:translateX(-110%)}40%{transform:translateX(0)}55%{transform:translateX(4px)}70%{transform:translateX(0)}}
+              @keyframes gapBarRight{0%{transform:translateX(110%)}40%{transform:translateX(0)}55%{transform:translateX(-4px)}70%{transform:translateX(0)}}
+              @keyframes gapBurst{0%{opacity:0;transform:scale(0.3)}50%{opacity:1;transform:scale(1.15)}70%{transform:scale(0.92)}100%{transform:scale(1)}}
+              @keyframes gapLabelUp{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+              .gap-bar-l{animation:gapBarLeft 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards}
+              .gap-bar-r{animation:gapBarRight 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards}
+              .gap-burst{animation:gapBurst 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.35s both}
+              .gap-label-up{animation:gapLabelUp 0.4s ease 0.55s both}
+            `}</style>
+            <p style={{ fontSize: 10, color: "#9a9088", letterSpacing: "0.2em", marginBottom: 14, textTransform: "uppercase" }}>Expectation Gap</p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14, height: 32 }}>
+              <div className="gap-bar-l" style={{ flex: 1, maxWidth: 100, height: 6, borderRadius: 3, background: "linear-gradient(90deg, transparent, #c9a96e)" }} />
+              <div className="gap-burst" style={{ fontSize: 32, lineHeight: 1 }}>{gap.emoji}</div>
+              <div className="gap-bar-r" style={{ flex: 1, maxWidth: 100, height: 6, borderRadius: 3, background: "linear-gradient(90deg, " + gap.color + ", transparent)" }} />
+            </div>
+            <p className="gap-label-up" style={{ fontSize: 20, color: gap.color, fontWeight: 700, letterSpacing: "0.06em" }}>{gap.label}</p>
           </div>
         )}
 
