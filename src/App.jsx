@@ -2820,6 +2820,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
   const isWished = currentUser && (wishlists?.[currentUser.id] || []).includes(store.id);
   const toggleWishlist = async (e) => {
     e.stopPropagation();
+    e.preventDefault();
     if (!currentUser) { navigate("login"); return; }
     if (isWished) {
       await supabase.from("wishlists").delete().eq("user_id", currentUser.id).eq("store_id", store.id);
@@ -2837,7 +2838,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
 
   return (
     <div style={{ position: "relative" }}>
-      <div onClick={() => navigate("store", store.id)} className="card-morph-e" style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 8, width: "100%", cursor: "pointer" }}>
+      <div onClick={() => navigate("store", store.id)} onTouchEnd={(e) => { e.preventDefault(); navigate("store", store.id); }} className="card-morph-e" style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 8, width: "100%", cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
         <span style={{ fontSize: 30 }}>{store.image}</span>
         <div style={{ flex: 1 }}>
@@ -2864,6 +2865,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
               }}
               className={isWished ? "heart-bounce" : ""}
               key={isWished ? "wished" : "unwished"}
+              onTouchEnd={toggleWishlist}
             >
               {isWished ? "🍽️" : "♡"}
             </button>
