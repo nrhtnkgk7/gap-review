@@ -1412,9 +1412,9 @@ function SearchPage({ navigate, stores, reviews, currentUser, searchQ, setSearch
 
 function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam, currentUser, notify, wishlists, setWishlists }) {
   const [sameTypeOnly, setSameTypeOnly] = useState(false);
-  const store = stores.find(s => s.id === pageParam);
+  const store = stores.find(s => s.id === pageParam || String(s.id) === String(pageParam));
   if (!store) return <div style={{ padding: 80, textAlign: "center", color: "#9a9088" }}>店舗が見つかりません</div>;
-  const storeReviews = reviews.filter(r => r.storeId === pageParam);
+  const storeReviews = reviews.filter(r => r.storeId === pageParam || String(r.storeId) === String(pageParam));
   // フィルター適用（同タイプのみ表示）
   const displayReviews = sameTypeOnly && currentUser
     ? storeReviews.filter(r => r.userType === currentUser.userType)
@@ -1443,7 +1443,12 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
       <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
         <div style={{ fontSize: 50, lineHeight: 1 }}>{store.image}</div>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(24px,5vw,36px)", fontWeight: 400, letterSpacing: "0.04em", marginBottom: 10 }}>{store.name}</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+            <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(24px,5vw,36px)", fontWeight: 400, letterSpacing: "0.04em" }}>{store.name}</h1>
+            {currentUser && reviews.some(r => (r.storeId === store.id || String(r.storeId) === String(store.id)) && r.userId === currentUser.id) && (
+              <span style={{ fontSize: 10, color: "#c9a96e", background: "#c9a96e18", border: "1px solid #c9a96e55", padding: "2px 10px", borderRadius: 20, letterSpacing: "0.1em", whiteSpace: "nowrap", alignSelf: "center" }}>訪問済み ✓</span>
+            )}
+          </div>
           <p style={{ fontSize: 13, color: "#7a7268", lineHeight: 1.8, letterSpacing: "0.04em" }}>{store.description}</p>
           {currentUser?.isAdmin && (
             <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
@@ -2828,13 +2833,18 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
     }
   };
 
+  const isVisited = currentUser && allReviews && allReviews.some(r => (r.storeId === store.id || String(r.storeId) === String(store.id)) && r.userId === currentUser.id);
+
   return (
     <div style={{ position: "relative" }}>
-      <button onClick={() => navigate("store", store.id)} className="card-morph-e" style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 8, width: "100%" }}>
+      <div onClick={() => navigate("store", store.id)} className="card-morph-e" style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "20px", textAlign: "left", color: "#2c2420", borderRadius: 8, width: "100%", cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
         <span style={{ fontSize: 30 }}>{store.image}</span>
         <div style={{ flex: 1 }}>
-          <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.04em", marginBottom: 3 }}>{store.name}</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 3 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.04em" }}>{store.name}</p>
+            {isVisited && <span style={{ fontSize: 9, color: "#c9a96e", background: "#c9a96e18", border: "1px solid #c9a96e44", padding: "1px 7px", borderRadius: 20, letterSpacing: "0.08em", flexShrink: 0 }}>訪問済み</span>}
+          </div>
           <p style={{ fontSize: 11, color: "#7a7268" }}>{store.area} / {store.category}</p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
@@ -2888,7 +2898,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
           <span style={{ fontSize: 10, color: "#c4b9ac", marginLeft: "auto" }}>{stats.total}件</span>
         </div>
       ) : <p style={{ fontSize: 11, color: "#c4b9ac" }}>まだレビューなし</p>}
-      </button>
+      </div>
 
     {justWished && (
       <div onClick={e => e.stopPropagation()} style={{ marginTop: 8, background: "#fffdf5", border: "1px solid #c9a96e55", borderRadius: 6, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
