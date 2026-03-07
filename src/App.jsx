@@ -787,6 +787,7 @@ export default function App() {
   const [stores, setStores] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const wasAuthed = useRef(false); // 一度でもログインしたらtrue
   const [users, setUsers] = useState([]);
   const [pageParam, setPageParam] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -801,7 +802,7 @@ export default function App() {
       if (session?.user) {
         supabase.from("profiles").select("*").eq("id", session.user.id).single()
           .then(({ data }) => {
-            if (data) setCurrentUser({ ...data, email: session.user.email, userType: data.user_type, isAdmin: data.is_admin });
+            if (data) { setCurrentUser({ ...data, email: session.user.email, userType: data.user_type, isAdmin: data.is_admin }); wasAuthed.current = true; }
           });
       }
     });
@@ -832,8 +833,17 @@ export default function App() {
       }
       setLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) setCurrentUser(null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // SIGNED_OUT のみでユーザーをクリア。TOKEN_REFRESHED や一時的な接続断では何もしない
+      if (event === "SIGNED_OUT") {
+        setCurrentUser(null);
+      } else if (event === "TOKEN_REFRESHED" && session?.user) {
+        // トークンリフレッシュ時: ユーザー情報を静かに再取得（ページ遷移は起こさない）
+        supabase.from("profiles").select("*").eq("id", session.user.id).single()
+          .then(({ data }) => {
+            if (data) setCurrentUser(prev => prev ? { ...prev, ...data, email: session.user.email, userType: data.user_type, isAdmin: data.is_admin } : prev);
+          });
+      }
     });
 
     // stores のリアルタイム同期（admin が変更した内容を全クライアントに即時反映）
@@ -929,7 +939,7 @@ export default function App() {
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
   const notify = (msg, type = "success") => { setNotification({ msg, type }); setTimeout(() => setNotification(null), 3000); };
-  const props = { navigate, stores, setStores, reviews, setReviews, currentUser, setCurrentUser, users, setUsers, pageParam, searchQ, setSearchQ, notify, follows, setFollows, wishlists, setWishlists };
+  const props = { navigate, stores, setStores, reviews, setReviews, currentUser, setCurrentUser, users, setUsers, pageParam, searchQ, setSearchQ, notify, follows, setFollows, wishlists, setWishlists, wasAuthed };
 
   if (loading) return (
     <div style={{ fontFamily: "'IBM Plex Sans JP','Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif", background: "#faf8f5", minHeight: "100vh", color: "#2c2420", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1741,7 +1751,7 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
   );
 }
 
-function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pageParam, notify, users, follows }) {
+function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pageParam, notify, users, follows, wasAuthed }) {
   const [storeId, setStoreId] = useState(pageParam || "");
   const [storeQ, setStoreQ] = useState(pageParam ? (stores.find(s => s.id === pageParam)?.name || "") : "");
   const [showSug, setShowSug] = useState(false);
@@ -1750,7 +1760,7 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  if (!currentUser) { navigate("login"); return null; }
+  if (!currentUser) { if (!wasAuthed?.current) navigate("login"); return null; }
   const selectedStore = stores.find(s => s.id === storeId);
   const suggestions = storeQ && !selectedStore ? stores.filter(s => s.name.includes(storeQ) || s.category.includes(storeQ) || s.area.includes(storeQ)).slice(0, 5) : [];
   const gap = preExpect && result ? calcGap(preExpect, result) : null;
@@ -1973,7 +1983,7 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
   );
 }
 
-function LoginPage({ navigate, setCurrentUser, notify }) {
+function LoginPage({ navigate, setCurrentUser, notify, wasAuthed }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -1983,7 +1993,7 @@ function LoginPage({ navigate, setCurrentUser, notify }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) { notify("メールアドレスまたはパスワードが間違っています", "error"); setIsLoading(false); return; }
     const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
-    if (profile) { setCurrentUser({ ...profile, email: data.user.email, userType: profile.user_type, isAdmin: profile.is_admin }); notify(`ようこそ、${profile.name}さん`); navigate("home"); }
+    if (profile) { setCurrentUser({ ...profile, email: data.user.email, userType: profile.user_type, isAdmin: profile.is_admin }); if (wasAuthed) wasAuthed.current = true; notify(`ようこそ、${profile.name}さん`); navigate("home"); }
     setIsLoading(false);
   };
   return (
@@ -2008,7 +2018,7 @@ function LoginPage({ navigate, setCurrentUser, notify }) {
   );
 }
 
-function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notify }) {
+function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notify, wasAuthed }) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -2029,6 +2039,7 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
     await supabase.from("profiles").insert({ id: data.user.id, name, user_type: userType, is_admin: false });
     const newUser = { id: data.user.id, name, user_type: userType, userType, is_admin: false, isAdmin: false, email };
     setCurrentUser(newUser);
+    if (wasAuthed) wasAuthed.current = true;
     setUsers(prev => [...prev, newUser]);
     setRegisteredUser(newUser);
     setStep(3);
@@ -2184,8 +2195,8 @@ function RegisterPage({ navigate, users, setUsers, setCurrentUser, stores, notif
 }
 
 
-function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReviews, stores, notify, follows, setFollows, users, wishlists, setWishlists }) {
-  if (!currentUser) { navigate("login"); return null; }
+function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReviews, stores, notify, follows, setFollows, users, wishlists, setWishlists, wasAuthed }) {
+  if (!currentUser) { if (!wasAuthed?.current) navigate("login"); return null; }
   const myReviews = reviews.filter(r => r.userId === currentUser.id);
   const [reviewFilter, setReviewFilter] = useState("all");
   const [contentTab, setContentTab] = useState("reviews"); // "reviews" | "wishlist"
@@ -2628,7 +2639,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
 // ── UsersPage: ユーザー一覧ページ ─────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 function UsersPage({ navigate, currentUser, users, reviews, stores, follows }) {
-  if (!currentUser) { navigate("login"); return null; }
+  if (!currentUser) { if (!wasAuthed?.current) navigate("login"); return null; }
 
   const [searchQ, setSearchQ] = useState("");
   const [sortBy, setSortBy] = useState("match");
@@ -2721,8 +2732,8 @@ function UsersPage({ navigate, currentUser, users, reviews, stores, follows }) {
 
 // ── AddStorePage: 一般ユーザー向け店舗登録 ────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
-function AddStorePage({ navigate, currentUser, stores, setStores, notify }) {
-  if (!currentUser) { navigate("login"); return null; }
+function AddStorePage({ navigate, currentUser, stores, setStores, notify, wasAuthed }) {
+  if (!currentUser) { if (!wasAuthed?.current) navigate("login"); return null; }
 
   const CATEGORY_OPTIONS = [
     { label: "鮨", icon: "🍣" }, { label: "和食・割烹", icon: "🍱" },
@@ -2848,12 +2859,12 @@ function RequestStorePage({ notify }) {
   );
 }
 
-function AdminPage({ navigate, currentUser, stores, setStores, reviews, setReviews, users, notify }) {
+function AdminPage({ navigate, currentUser, stores, setStores, reviews, setReviews, users, notify, wasAuthed }) {
   const [tab, setTab] = useState("stores");
   const [editingStore, setEditingStore] = useState(null);
   const [form, setForm] = useState({ name: "", category: "", area: "", priceRange: "¥¥", description: "", image: "🍽️" });
 
-  if (!currentUser?.isAdmin) { navigate("home"); return null; }
+  if (!currentUser?.isAdmin) { if (!wasAuthed?.current) navigate("home"); return null; }
 
   const handleSave = async () => {
     if (!form.name) { notify("店舗名を入力してください", "error"); return; }
