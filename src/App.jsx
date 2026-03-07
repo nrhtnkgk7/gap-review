@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Home, Store, PlusSquare, Users, User } from "https://esm.sh/lucide-react@0.263.1";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = "https://hhnhzvxfqwhfhcewbpye.supabase.co";
@@ -968,16 +967,23 @@ function ReviewProgressBar({ count }) {
 
 function BottomTabBar({ navigate, page }) {
   const accent = "#c9a96e";
+  const icons = {
+    home: (color, sw) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    search: (color, sw) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M3 2h18v20H3z"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>,
+    "add-store": (color, sw) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>,
+    users: (color, sw) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    profile: (color, sw) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  };
   const tabs = [
-    { id: "home",      Icon: Home,       label: "ホーム" },
-    { id: "search",    Icon: Store,      label: "店舗" },
-    { id: "add-store", Icon: PlusSquare, label: "登録" },
-    { id: "users",     Icon: Users,      label: "ユーザー" },
-    { id: "profile",   Icon: User,       label: "マイページ" },
+    { id: "home",      label: "ホーム" },
+    { id: "search",    label: "店舗" },
+    { id: "add-store", label: "登録" },
+    { id: "users",     label: "ユーザー" },
+    { id: "profile",   label: "マイページ" },
   ];
   return (
     <nav className="bottom-tab-bar">
-      {tabs.map(({ id, Icon, label }) => {
+      {tabs.map(({ id, label }) => {
         const isActive = page === id;
         return (
           <button
@@ -985,7 +991,7 @@ function BottomTabBar({ navigate, page }) {
             onClick={() => navigate(id)}
             style={{ background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, padding: "4px 0" }}
           >
-            <Icon size={22} strokeWidth={isActive ? 2.2 : 1.6} color={isActive ? accent : "#9a9088"} />
+            {icons[id](isActive ? accent : "#9a9088", isActive ? 2.2 : 1.6)}
             <span style={{ fontSize: 9, fontWeight: isActive ? 700 : 400, color: isActive ? accent : "#9a9088", letterSpacing: "0.04em" }}>{label}</span>
           </button>
         );
