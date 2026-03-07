@@ -783,13 +783,24 @@ function CountUpNum({ value, style }) {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [page, setPage] = useState("home");
+  // URLハッシュからの初期ページ解析
+  const parseHash = (hash) => {
+    const h = (hash || "").replace(/^#/, "");
+    if (!h || h === "home") return { page: "home", param: null };
+    const parts = h.split("/");
+    const validPages = ["home","search","store","review-form","login","register","profile","request-store","add-store","users","admin","user-profile"];
+    const pg = parts[0];
+    if (validPages.includes(pg)) return { page: pg, param: parts[1] ? (isNaN(parts[1]) ? parts[1] : parseInt(parts[1])) : null };
+    return { page: "home", param: null };
+  };
+  const initRoute = parseHash(window.location.hash);
+  const [page, setPage] = useState(initRoute.page);
   const [stores, setStores] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const wasAuthed = useRef(false); // 一度でもログインしたらtrue
   const [users, setUsers] = useState([]);
-  const [pageParam, setPageParam] = useState(null);
+  const [pageParam, setPageParam] = useState(initRoute.param);
   const [loading, setLoading] = useState(true);
   const [searchQ, setSearchQ] = useState("");
   const [notification, setNotification] = useState(null);
@@ -934,8 +945,9 @@ export default function App() {
       else { setPage("home"); setPageParam(null); }
     };
     window.addEventListener("popstate", handlePop);
-    // 初期状態をhistoryに登録
-    window.history.replaceState({ page: "home", param: null }, "", "#home");
+    // 初期状態をhistoryに登録（現在のハッシュを保持）
+    const initHash = parseHash(window.location.hash);
+    window.history.replaceState({ page: initHash.page, param: initHash.param }, "");
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
   const notify = (msg, type = "success") => { setNotification({ msg, type }); setTimeout(() => setNotification(null), 3000); };
@@ -1723,6 +1735,16 @@ function StorePage({ navigate, stores, setStores, reviews, setReviews, pageParam
 
       <div style={{ marginBottom: 32, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <button onClick={() => navigate(currentUser ? "review-form" : "login", pageParam)} className="shine-btn" style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "12px 28px", fontSize: 13, letterSpacing: "0.12em", fontWeight: 600 }}>レビューを書く</button>
+        <button onClick={() => {
+          const url = `https://gap-review.com/#store/${store.id}`;
+          if (navigator.share) {
+            navigator.share({ title: store.name + " - Gap Review", url }).catch(() => {});
+          } else if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(() => notify("URLをコピーしました"));
+          }
+        }} style={{ background: "#ffffff", border: "1px solid #c9a96e44", color: "#7a7268", padding: "12px 20px", fontSize: 13, borderRadius: 2, display: "flex", alignItems: "center", gap: 6 }}>
+          🔗 シェア
+        </button>
         {currentUser && (() => {
           const isWished = (wishlists?.[currentUser.id] || []).includes(store.id);
           const toggleWishlist = async () => {
@@ -1933,7 +1955,7 @@ function ReviewFormPage({ navigate, stores, reviews, setReviews, currentUser, pa
           <button onClick={() => { setSubmitted(false); setStoreId(""); setStoreQ(""); setPreExpect(""); setResult(""); setComment(""); }} style={{ background: "#c9a96e", border: "none", color: "#faf8f5", padding: "14px", fontSize: 13, fontWeight: 600, letterSpacing: "0.12em", borderRadius: 4 }}>続けてレビューを書く +</button>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => navigate("store", storeId)} style={{ flex: 1, background: "none", border: "1px solid #c9a96e44", color: "#2c2420", padding: "12px", fontSize: 12, borderRadius: 4 }}>{postedStore?.name || "店舗"}のページへ</button>
-            <button onClick={() => { if (navigator.clipboard) navigator.clipboard.writeText(`gap-review.com`).then(() => notify("URLをコピーしました")); }} style={{ flex: 1, background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "12px", fontSize: 12, borderRadius: 4 }}>🔗 シェア</button>
+            <button onClick={() => { if (navigator.clipboard) navigator.clipboard.writeText(`https://gap-review.com/#store/${storeId}`).then(() => notify("URLをコピーしました")); }} style={{ flex: 1, background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "12px", fontSize: 12, borderRadius: 4 }}>🔗 シェア</button>
           </div>
         </div>
       </div>
@@ -2243,6 +2265,7 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
   const [reviewFilter, setReviewFilter] = useState("all");
   const [contentTab, setContentTab] = useState("reviews"); // "reviews" | "wishlist"
   const [followTab, setFollowTab] = useState(null);
+  const [editingReview, setEditingReview] = useState(null); // { id, preExpect, result, comment }
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(currentUser.name);
   const [editAxis1, setEditAxis1] = useState(currentUser.userType?.[0] || "");
@@ -2284,9 +2307,23 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
     notify("レビューを削除しました");
   };
 
+  const handleSaveEdit = async () => {
+    if (!editingReview) return;
+    const { id, preExpect, result, comment } = editingReview;
+    const { error } = await supabase.from("reviews").update({
+      pre_expect: preExpect, result, comment,
+    }).eq("id", id);
+    if (error) { notify("更新に失敗しました", "error"); return; }
+    setReviews(prev => prev.map(r => r.id === id ? { ...r, preExpect, result, comment } : r));
+    setEditingReview(null);
+    notify("レビューを更新しました");
+  };
+
   const handleShare = () => {
-    const url = `https://gap-review.com#user-profile/${currentUser.id}`;
-    if (navigator.clipboard) {
+    const url = `https://gap-review.com/#user-profile/${currentUser.id}`;
+    if (navigator.share) {
+      navigator.share({ title: currentUser.name + " - Gap Review", url }).catch(() => {});
+    } else if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(() => notify("URLをコピーしました"));
     } else { notify("URLのコピーに失敗しました", "error"); }
   };
@@ -2574,21 +2611,54 @@ function ProfilePage({ navigate, currentUser, setCurrentUser, reviews, setReview
                       {filteredReviews.map(r => {
                         const store = stores.find(s => s.id === r.storeId);
                         return (
-                          <div key={r.id} style={{ background: "#ffffff", border: "1px solid #c9a96e44", padding: "16px 20px" }}>
+                          <div key={r.id} style={{ background: "#ffffff", border: editingReview?.id === r.id ? "1px solid #c9a96e" : "1px solid #c9a96e44", padding: "16px 20px", borderRadius: 8, transition: "border-color 0.2s" }}>
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                               <button onClick={() => navigate("store", r.storeId)} style={{ background: "none", border: "none", padding: 0, display: "flex", alignItems: "center", gap: 8, color: "#2c2420" }}>
                                 <span style={{ fontSize: 18 }}>{store?.image}</span>
                                 <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "0.04em" }}>{store?.name || "不明な店舗"}</span>
                                 <span style={{ fontSize: 11, color: "#7a7268" }}>{store?.area} / {store?.category}</span>
                               </button>
-                              <button onClick={() => handleDeleteReview(r.id)} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2, flexShrink: 0 }}>削除</button>
+                              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                                {editingReview?.id !== r.id && (
+                                  <button onClick={() => setEditingReview({ id: r.id, preExpect: r.preExpect, result: r.result, comment: r.comment || "" })} style={{ background: "none", border: "1px solid #c9a96e44", color: "#c9a96e", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>✏️ 編集</button>
+                                )}
+                                <button onClick={() => handleDeleteReview(r.id)} style={{ background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "4px 10px", fontSize: 11, borderRadius: 2 }}>削除</button>
+                              </div>
                             </div>
                             <div style={{ marginBottom: 8 }}><span style={{ fontSize: 11, color: "#7a7268" }}>{r.date}</span></div>
-                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-                              <span style={{ fontSize: 11, background: "#f5f0e8", border: "1px solid #c9a96e44", color: "#7a7268", padding: "3px 8px", borderRadius: 2 }}>{{ low: "あまり期待せずに訪問", normal: "普通の期待で訪問", high: "かなり期待して訪問" }[r.preExpect]}</span>
-                              <span style={{ fontSize: 11, background: r.result === "Good" ? "#1abc9c22" : r.result === "Below" ? "#e74c3c22" : "#f39c1222", border: `1px solid ${r.result === "Good" ? "#1abc9c44" : r.result === "Below" ? "#e74c3c44" : "#f39c1244"}`, color: r.result === "Good" ? "#1abc9c" : r.result === "Below" ? "#e74c3c" : "#f39c12", padding: "3px 8px", borderRadius: 2 }}>{r.result}</span>
-                            </div>
-                            {r.comment && <p style={{ fontSize: 13, color: "#8a8278", lineHeight: 1.7 }}>{r.comment}</p>}
+                            {editingReview?.id === r.id ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                <div>
+                                  <p style={{ fontSize: 11, color: "#9a9088", marginBottom: 6 }}>訪問前の期待</p>
+                                  <div style={{ display: "flex", gap: 6 }}>
+                                    {[["low","あまり期待せず"],["normal","普通に期待"],["high","かなり期待"]].map(([v,l]) => (
+                                      <button key={v} onClick={() => setEditingReview(prev => ({...prev, preExpect: v}))} style={{ flex: 1, background: editingReview.preExpect === v ? "#c9a96e" : "#f5f0e8", border: `1px solid ${editingReview.preExpect === v ? "#c9a96e" : "#d8d0c4"}`, color: editingReview.preExpect === v ? "#faf8f5" : "#8a8278", padding: "8px 4px", borderRadius: 3, fontSize: 11, fontWeight: editingReview.preExpect === v ? 600 : 400, transition: "all 0.15s" }}>{l}</button>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <p style={{ fontSize: 11, color: "#9a9088", marginBottom: 6 }}>結果</p>
+                                  <div style={{ display: "flex", gap: 6 }}>
+                                    {[["Good","🚀 期待以上","#1abc9c"],["Expected","✓ 期待通り","#f39c12"],["Below","↓ 残念","#e74c3c"]].map(([v,l,c]) => (
+                                      <button key={v} onClick={() => setEditingReview(prev => ({...prev, result: v}))} style={{ flex: 1, background: editingReview.result === v ? c + "22" : "#f5f0e8", border: `1px solid ${editingReview.result === v ? c : "#d8d0c4"}`, color: editingReview.result === v ? c : "#8a8278", padding: "8px 4px", borderRadius: 3, fontSize: 11, fontWeight: editingReview.result === v ? 600 : 400, transition: "all 0.15s" }}>{l}</button>
+                                    ))}
+                                  </div>
+                                </div>
+                                <textarea value={editingReview.comment} onChange={e => setEditingReview(prev => ({...prev, comment: e.target.value}))} placeholder="コメント（任意）" rows={3} style={{ width: "100%", background: "#f5f0e8", border: "1px solid #c9a96e44", borderRadius: 3, padding: "10px 14px", color: "#2c2420", resize: "vertical", outline: "none", lineHeight: 1.7, fontSize: 13 }} />
+                                <div style={{ display: "flex", gap: 8 }}>
+                                  <button onClick={() => setEditingReview(null)} style={{ flex: 1, background: "none", border: "1px solid #c9a96e44", color: "#7a7268", padding: "10px", fontSize: 12, borderRadius: 2 }}>キャンセル</button>
+                                  <button onClick={handleSaveEdit} style={{ flex: 2, background: "#c9a96e", border: "none", color: "#faf8f5", padding: "10px", fontSize: 12, fontWeight: 600, borderRadius: 2 }}>保存する</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                                  <span style={{ fontSize: 11, background: "#f5f0e8", border: "1px solid #c9a96e44", color: "#7a7268", padding: "3px 8px", borderRadius: 2 }}>{{ low: "あまり期待せずに訪問", normal: "普通の期待で訪問", high: "かなり期待して訪問" }[r.preExpect]}</span>
+                                  <span style={{ fontSize: 11, background: r.result === "Good" ? "#1abc9c22" : r.result === "Below" ? "#e74c3c22" : "#f39c1222", border: `1px solid ${r.result === "Good" ? "#1abc9c44" : r.result === "Below" ? "#e74c3c44" : "#f39c1244"}`, color: r.result === "Good" ? "#1abc9c" : r.result === "Below" ? "#e74c3c" : "#f39c12", padding: "3px 8px", borderRadius: 2 }}>{r.result}</span>
+                                </div>
+                                {r.comment && <p style={{ fontSize: 13, color: "#8a8278", lineHeight: 1.7 }}>{r.comment}</p>}
+                              </>
+                            )}
                           </div>
                         );
                       })}
