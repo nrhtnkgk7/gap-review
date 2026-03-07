@@ -1049,6 +1049,7 @@ function HomePage({ navigate, stores, reviews, currentUser, follows, users, wish
   const [feedFilter, setFeedFilter] = useState("all");
 
   if (currentUser) {
+    const myReviews = reviews.filter(r => r.userId === currentUser.id);
     const myFollowingIds = follows?.[currentUser.id] || [];
     const myWishlistIds = wishlists?.[currentUser.id] || [];
 
