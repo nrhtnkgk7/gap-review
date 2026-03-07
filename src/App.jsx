@@ -679,7 +679,7 @@ function MatchBadge({ matchResult, compact }) {
           {/* スコア弧 */}
           <circle cx="18" cy="18" r="14" fill="none" stroke={color} strokeWidth="3"
             strokeDasharray={`${circumference} ${circumference}`}
-            strokeDashoffset={animated ? circumference - filled : circumference}
+            strokeDashoffset={circumference - filled}
             strokeLinecap="round"
             opacity={isEstimate ? 0.5 : 1}
             style={{ transition: "stroke-dashoffset 0.9s cubic-bezier(0.4,0,0.2,1)" }}
@@ -704,6 +704,27 @@ function MatchBadge({ matchResult, compact }) {
       </div>
     </div>
   );
+}
+
+function useCountUp(target, duration = 800) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (target === 0) { setCount(0); return; }
+    const start = performance.now();
+    const tick = (now) => {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setCount(Math.round(eased * target));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [target]);
+  return count;
+}
+
+function CountUpNum({ value, style }) {
+  const n = useCountUp(value);
+  return <span style={style}>{n}</span>;
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -2790,7 +2811,7 @@ function StoreCard({ store, reviews, navigate, currentUser, allReviews, allStore
     ? precomputedResult
     : (currentUser && allReviews && allStores ? calcMatchScore(store.id, currentUser, allReviews, allStores) : null);
 
-  const [justWished, setJustWished] = React.useState(false);
+  const [justWished, setJustWished] = useState(false);
   const isWished = currentUser && (wishlists?.[currentUser.id] || []).includes(store.id);
   const toggleWishlist = async (e) => {
     e.stopPropagation();
